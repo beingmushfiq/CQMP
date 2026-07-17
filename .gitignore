@@ -1,0 +1,38 @@
+# ── OS / Editor ─────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ── Backend (Laravel) ───────────────────────
+backend/vendor/
+backend/.env
+backend/.env.backup
+backend/storage/logs/*.log
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/*.php
+backend/public/hot
+backend/public/storage
+backend/.phpunit.result.cache
+backend/node_modules/
+
+# Keep the SQLite database file placeholder but not its data
+# (comment out if you want to track the empty db)
+backend/database/database.sqlite
+
+# ── Frontend (Node / Vite) ──────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# ── Misc ────────────────────────────────────
+*.log
+*.cache

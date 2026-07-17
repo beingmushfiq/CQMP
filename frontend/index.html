@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.svg" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Viewport & Mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CQMP" />
+
+    <!-- Theme -->
+    <meta name="theme-color" content="#6366F1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)" />
+    <meta name="msapplication-TileColor" content="#0F172A" />
+
+    <!-- SEO & Description -->
+    <title>CQMP – Clinic Queue Management Platform</title>
+    <meta name="description" content="Real-time clinic queue management — register patients, track waiting lists, and display live queue status for doctors and receptionists." />
+    <meta name="application-name" content="CQMP" />
+    <meta name="keywords" content="clinic queue, hospital management, patient queue, medical software" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="CQMP – Clinic Queue Management Platform" />
+    <meta property="og:description" content="Real-time clinic queue management for modern healthcare." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icon-512.svg" />
+
+    <!-- Inline theme script: runs before React to apply dark mode without FOUC -->
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('cqmp_theme');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

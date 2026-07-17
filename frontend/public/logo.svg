@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon mark background rounded square -->
+  <rect x="0" y="4" width="72" height="72" rx="18" fill="#0F172A"/>
+  <!-- Subtle inner glow -->
+  <rect x="0" y="4" width="72" height="72" rx="18" fill="url(#glowGrad)" opacity="0.6"/>
+  <!-- Border -->
+  <rect x="0.5" y="4.5" width="71" height="71" rx="17.5" stroke="url(#iconGrad)" stroke-opacity="0.4" stroke-width="1"/>
+
+  <!-- Queue flow line — vertical track on left of icon -->
+  <line x1="22" y1="22" x2="22" y2="58" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-opacity="0.5"/>
+
+  <!-- Three patient dots (queue nodes) -->
+  <circle cx="22" cy="22" r="4.5" fill="url(#iconGrad)"/>
+  <circle cx="22" cy="40" r="4.5" fill="url(#iconGrad)" opacity="0.75"/>
+  <circle cx="22" cy="58" r="4.5" fill="url(#iconGrad)" opacity="0.45"/>
+
+  <!-- Connector arrows pointing right from each dot -->
+  <line x1="29" y1="22" x2="38" y2="22" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.7"/>
+  <line x1="29" y1="40" x2="38" y2="40" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.5"/>
+  <line x1="29" y1="58" x2="38" y2="58" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.3"/>
+
+  <!-- Medical cross — right side of icon -->
+  <!-- Vertical bar -->
+  <rect x="46" y="29" width="6" height="22" rx="3" fill="white"/>
+  <!-- Horizontal bar -->
+  <rect x="40" y="35" width="18" height="6" rx="3" fill="white"/>
+  <!-- Cross subtle glow -->
+  <rect x="46" y="29" width="6" height="22" rx="3" fill="url(#iconGrad)" opacity="0.3"/>
+  <rect x="40" y="35" width="18" height="6" rx="3" fill="url(#iconGrad)" opacity="0.3"/>
+
+  <!-- Wordmark -->
+  <!-- "CQMP" primary text -->
+  <text x="90" y="48" font-family="'Inter', 'Segoe UI', system-ui, sans-serif" font-weight="800" font-size="32" letter-spacing="2" fill="#0F172A">CQMP</text>
+
+  <!-- Subtitle -->
+  <text x="91" y="64" font-family="'Inter', 'Segoe UI', system-ui, sans-serif" font-weight="400" font-size="11" letter-spacing="1.5" fill="#6366F1">CLINIC QUEUE MANAGEMENT</text>
+
+  <!-- Accent dot between letters -->
+  <circle cx="211" cy="40" r="3" fill="url(#iconGrad)"/>
+</svg>

@@ -1,0 +1,41 @@
+{
+  "name": "CQMP",
+  "short_name": "CQMP",
+  "description": "Clinic Queue Management Platform — manage patient queues with real-time updates",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#6366F1",
+  "orientation": "any",
+  "categories": ["medical", "health", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Receptionist Desk",
+      "short_name": "Desk",
+      "description": "Open the receptionist queue panel",
+      "url": "/?role=receptionist",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Doctor Dashboard",
+      "short_name": "Doctor",
+      "description": "Open the doctor queue view",
+      "url": "/?role=doctor",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

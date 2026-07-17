@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="65%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#0F172A"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <rect x="2" y="2" width="508" height="508" rx="110" stroke="url(#g1)" stroke-opacity="0.3" stroke-width="4"/>
+
+  <!-- Queue flow vertical track -->
+  <line x1="144" y1="144" x2="144" y2="368" stroke="#6366F1" stroke-width="12" stroke-linecap="round" stroke-opacity="0.4"/>
+
+  <!-- Queue nodes (patients) -->
+  <circle cx="144" cy="144" r="32" fill="url(#g1)"/>
+  <circle cx="144" cy="256" r="32" fill="url(#g1)" opacity="0.7"/>
+  <circle cx="144" cy="368" r="32" fill="url(#g1)" opacity="0.35"/>
+
+  <!-- Connectors -->
+  <line x1="180" y1="144" x2="240" y2="144" stroke="#818CF8" stroke-width="10" stroke-linecap="round" stroke-opacity="0.6"/>
+  <line x1="180" y1="256" x2="240" y2="256" stroke="#818CF8" stroke-width="10" stroke-linecap="round" stroke-opacity="0.38"/>
+
+  <!-- Medical cross -->
+  <rect x="293" y="176" width="64" height="160" rx="32" fill="white"/>
+  <rect x="245" y="224" width="160" height="64" rx="32" fill="white"/>
+</svg>
