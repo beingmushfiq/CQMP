@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import api from '../utils/api';
-import { Save, Upload, Check, AlertCircle, Settings, Building2, User, Palette } from 'lucide-react';
+import { Save, Upload, Check, AlertCircle, Settings, Building2, User } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { settings, fetchSettings, updateSettings, get } = useSettingsStore();
@@ -39,7 +39,7 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'favicon') => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'favicon' | 'doctor_image') => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(type);
