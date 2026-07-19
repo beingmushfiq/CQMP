@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PatientController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\QueueController;
+use App\Http\Controllers\Api\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,12 +22,25 @@ Route::prefix('v1')->group(function () {
     Route::get('/public/doctors', [QueueController::class, 'publicDoctors'])->name('public.doctors');
     Route::post('/public/book',   [QueueController::class, 'publicBook'])->name('public.book');
 
+    // ── Public: Settings (no auth) ────────────────────────────────────
+    Route::get('/settings/public', [SettingsController::class, 'publicSettings'])->name('settings.public');
+
     // ── Protected: Require Sanctum token ──────────────────────────────
     Route::middleware('auth:sanctum')->group(function () {
 
         // Auth
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
         Route::get('/me',      [AuthController::class, 'me'])->name('api.me');
+
+        // Settings (Super Admin)
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/upload', [SettingsController::class, 'upload'])->name('settings.upload');
+
+        // Profile
+        Route::put('/profile/name',     [ProfileController::class, 'updateName'])->name('profile.name');
+        Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+        Route::post('/profile/avatar',  [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
 
         // Patients
         Route::apiResource('patients', PatientController::class);

@@ -17,6 +17,8 @@ class PatientResource extends JsonResource
             'is_blocked'     => $this->is_blocked,
             'blocked_reason' => $this->blocked_reason,
             'qr_identifier'  => $this->qr_identifier,
+            'serial_no'      => $this->queueItems->first()?->serial_no,
+            'queue_status'   => $this->queueItems->first()?->status,
             'created_at'     => $this->created_at?->toIso8601String(),
         ];
     }

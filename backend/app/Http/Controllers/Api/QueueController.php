@@ -75,6 +75,7 @@ class QueueController extends Controller
             'queue_day_id' => ['required', 'exists:queue_days,id'],
             'patient_id'   => ['required', 'exists:patients,id'],
             'serial_no'    => ['nullable', 'integer', 'min:1'],
+            'priority'     => ['nullable', 'string', 'in:Normal,Emergency,Reserved'],
         ]);
 
         $queueDay = QueueDay::findOrFail($data['queue_day_id']);
@@ -84,7 +85,8 @@ class QueueController extends Controller
             abort(403, 'Patient is blocked: ' . $patient->blocked_reason);
         }
 
-        $item = $this->queue->createWalkIn($queueDay, $patient, 'Normal', $data['serial_no'] ?? null);
+        $priority = $data['priority'] ?? 'Normal';
+        $item = $this->queue->createWalkIn($queueDay, $patient, $priority, $data['serial_no'] ?? null);
         $this->audit->log('queue.walkin_created', targetPatientId: $patient->id, request: $request);
 
         return new QueueItemResource($item->load('patient'));

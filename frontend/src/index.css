@@ -1,3 +1,50 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Premium dark mode surface colors */
+  body {
+    @apply transition-colors duration-300;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-600;
+  }
+
+  /* Selection color */
+  ::selection {
+    @apply bg-indigo-500/30 text-indigo-900 dark:text-indigo-100;
+  }
+}
+
+@layer utilities {
+  /* Glass morphism utilities */
+  .glass {
+    @apply bg-white/70 dark:bg-surface-card/70 backdrop-blur-md;
+  }
+
+  .glass-strong {
+    @apply bg-white/80 dark:bg-surface-card/80 backdrop-blur-lg;
+  }
+
+  /* Text sizing per plan spec */
+  .text-body {
+    @apply text-xs;
+  }
+
+  .text-label {
+    @apply text-[10px] font-bold uppercase tracking-wider text-slate-400;
+  }
+}
