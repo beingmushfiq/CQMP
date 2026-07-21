@@ -164,6 +164,10 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
             <span className="text-[10px] font-semibold">{t('tv.doctors')}</span>
           </button>
         )}
+        <button onClick={toggleFullscreen} className="flex flex-col items-center gap-1 px-3 py-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">
+          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          <span className="text-[10px] font-semibold">{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
+        </button>
         <button onClick={() => setProfileOpen(true)} className="flex flex-col items-center gap-1 px-3 py-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">
           {user?.avatar ? (
             <img src={`http://localhost:8000/storage/${user.avatar}`} alt="" className="w-5 h-5 rounded-full object-cover" />
@@ -211,7 +215,10 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
               </button>
             ))}
           </div>
-          <div className="mt-4 md:mt-6 flex justify-between items-center">
+          <div className="mt-4 md:mt-6 flex justify-between items-center gap-2">
+            <button onClick={toggleFullscreen} className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs cursor-pointer transition-all" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+              {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+            </button>
             <button onClick={logout} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-white text-xs font-medium cursor-pointer flex items-center gap-1.5">
               <LogOut className="w-3.5 h-3.5" /> {t('tv.log.out')}
             </button>
@@ -390,7 +397,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
           </div>
           {!embedded && (
             <>
-              <button onClick={toggleFullscreen} className="hidden sm:flex bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700/80 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs font-semibold cursor-pointer transition-all items-center gap-2" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+              <button onClick={toggleFullscreen} className="flex bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700/80 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs font-semibold cursor-pointer transition-all items-center gap-2" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
                 {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
               </button>
               <button onClick={logout} className="hidden sm:flex bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700/80 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs font-semibold cursor-pointer transition-all items-center gap-2">
@@ -412,11 +419,11 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
             <Volume2 className="w-4 h-4 md:w-5 md:h-5" /> {t('tv.live')}
           </div>
 
-          <div className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-3 md:p-4 rounded-xl flex items-center gap-3 md:gap-4 mb-3 md:mb-5 text-left">
-            <img src={getSetting('doctor_image') ? `http://localhost:8000/storage/${getSetting('doctor_image')}` : '/doctor_portrait.png'} alt="Doctor" className="w-10 h-10 md:w-16 md:h-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700/50 shrink-0" />
+          <div className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-4 md:p-6 rounded-xl flex items-center gap-4 md:gap-6 mb-3 md:mb-5 text-left">
+            <img src={getSetting('doctor_image') ? `http://localhost:8000/storage/${getSetting('doctor_image')}` : '/doctor_portrait.png'} alt="Doctor" className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-xl object-cover border border-slate-200 dark:border-slate-700/50 shrink-0" />
             <div className="min-w-0">
-              <h3 className="font-bold text-sm md:text-xl text-slate-900 dark:text-white truncate">{doctors.find((d) => d.id === selectedDoctorId)?.name}</h3>
-              <p className="text-indigo-600 dark:text-indigo-400 text-[10px] md:text-sm font-semibold uppercase tracking-wider truncate">{doctors.find((d) => d.id === selectedDoctorId)?.specialization}</p>
+              <h3 className="font-bold text-lg md:text-2xl lg:text-3xl text-slate-900 dark:text-white truncate">{doctors.find((d) => d.id === selectedDoctorId)?.name}</h3>
+              <p className="text-indigo-600 dark:text-indigo-400 text-sm md:text-lg font-semibold uppercase tracking-wider truncate">{doctors.find((d) => d.id === selectedDoctorId)?.specialization}</p>
             </div>
           </div>
 
@@ -426,11 +433,11 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
             <p className="text-[10px] md:text-sm text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{t('tv.now.calling')}</p>
             <AnimatePresence mode="wait">
               {activeItem ? (
-                <motion.div key={activeItem.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="space-y-2 md:space-y-3">
-                  <div className="text-4xl md:text-6xl lg:text-7xl font-black text-indigo-600 dark:text-indigo-400 leading-none drop-shadow-[0_4px_12px_rgba(99,102,241,0.15)] dark:drop-shadow-[0_0_20px_rgba(99,102,241,0.3)] animate-pulse">
-                    #{activeItem.serial_no}
+                <motion.div key={activeItem.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-3 md:p-6 lg:p-8 rounded-xl flex items-center gap-3 md:gap-5 lg:gap-6">
+                  <span className="text-3xl md:text-5xl lg:text-7xl font-black leading-none text-indigo-600 dark:text-indigo-400">#{activeItem.serial_no}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base md:text-2xl lg:text-4xl font-black text-slate-900 dark:text-white truncate">{activeItem.patient.name}</div>
                   </div>
-                  <div className="text-base md:text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate">{activeItem.patient.name}</div>
                 </motion.div>
               ) : (
                 <motion.div key="wait" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

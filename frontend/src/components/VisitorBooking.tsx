@@ -98,66 +98,77 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
 
     // Create canvas
     const canvas = document.createElement('canvas');
-    canvas.width = 600;
-    canvas.height = 400;
+    canvas.width = 700;
+    canvas.height = 500;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Background Gradient
-    const grad = ctx.createLinearGradient(0, 0, 600, 400);
-    grad.addColorStop(0, '#0f172a'); // slate-900
-    grad.addColorStop(1, '#020617'); // slate-950
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 600, 400);
-
-    // Draw Card Accent Lines
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.15)'; // emerald-500 with opacity
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(300, 200, 180, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)'; // emerald-500
-    ctx.lineWidth = 3;
-    ctx.strokeRect(20, 20, 560, 360);
-
-    // Clinic Title
-    ctx.fillStyle = '#94a3b8'; // slate-400
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(t('visitor.canvas.title'), 300, 55);
-
-    // Serial Label
-    ctx.fillStyle = '#34d399'; // emerald-400
-    ctx.font = 'normal 14px sans-serif';
-    ctx.fillText(t('visitor.canvas.serial'), 300, 100);
-
-    // Serial Number
-    ctx.fillStyle = '#10b981'; // emerald-500
-    ctx.font = '900 80px sans-serif';
-    ctx.fillText(`#${result.serial_no}`, 300, 180);
-
-    // Patient Info
+    // --- Background ---
+    // White base
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 20px sans-serif';
-    ctx.fillText(result.patient.name, 300, 240);
+    ctx.fillRect(0, 0, 700, 500);
+    
+    // Subtle top gradient bar
+    const topGrad = ctx.createLinearGradient(0, 0, 700, 0);
+    topGrad.addColorStop(0, '#d1fae5'); // emerald-100
+    topGrad.addColorStop(1, '#a7f3d0'); // emerald-200
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, 700, 120);
+    
+    // Soft shadow effect
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.05)';
+    ctx.fillRect(40, 40, 620, 420);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(35, 35, 630, 430);
+    
+    // Main border
+    ctx.strokeStyle = '#e2e8f0'; // slate-200
+    ctx.lineWidth = 2;
+    ctx.strokeRect(35, 35, 630, 430);
+    
+    // Inner accent border
+    ctx.strokeStyle = '#10b981'; // emerald-500
+    ctx.lineWidth = 1;
+    ctx.strokeRect(45, 45, 610, 410);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'normal 14px sans-serif';
-    ctx.fillText(`${t('visitor.canvas.phone')} ${result.patient.phone || 'N/A'}`, 300, 265);
+    // --- Header ---
+    ctx.fillStyle = '#065f46'; // emerald-800
+    ctx.font = 'bold 24px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t('visitor.canvas.title'), 350, 95);
 
-    // Doctor Info
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '600 16px sans-serif';
-    ctx.fillText(`${t('visitor.canvas.doctor')} ${doctorName}`, 300, 310);
+    // --- Serial Number ---
+    // Label
+    ctx.fillStyle = '#059669'; // emerald-600
+    ctx.font = '600 18px "Segoe UI", sans-serif';
+    ctx.fillText(t('visitor.canvas.serial'), 350, 190);
+    
+    // Number
+    ctx.fillStyle = '#10b981'; // emerald-500
+    ctx.font = '900 120px "Segoe UI", sans-serif';
+    ctx.fillText(`#${result.serial_no}`, 350, 300);
 
-    // Timestamp
+    // --- Patient Info ---
+    ctx.fillStyle = '#0f172a'; // slate-900
+    ctx.font = 'bold 22px "Segoe UI", sans-serif';
+    ctx.fillText(result.patient.name, 350, 360);
+    
+    ctx.fillStyle = '#64748b'; // slate-500
+    ctx.font = '500 15px "Segoe UI", sans-serif';
+    ctx.fillText(`${t('visitor.canvas.phone')} ${result.patient.phone || 'N/A'}`, 350, 385);
+
+    // --- Doctor Info ---
+    ctx.fillStyle = '#334155'; // slate-700
+    ctx.font = '600 17px "Segoe UI", sans-serif';
+    ctx.fillText(`${t('visitor.canvas.doctor')} ${doctorName}`, 350, 430);
+
+    // --- Timestamp ---
     const now = new Date();
     const dateStr = now.toLocaleDateString();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    ctx.fillStyle = '#64748b';
-    ctx.font = 'normal 12px sans-serif';
-    ctx.fillText(`${t('visitor.canvas.booked.on')} ${dateStr} at ${timeStr}`, 300, 355);
+    ctx.fillStyle = '#94a3b8'; // slate-400
+    ctx.font = 'normal 13px "Segoe UI", sans-serif';
+    ctx.fillText(`${t('visitor.canvas.booked.on')} ${dateStr} at ${timeStr}`, 350, 465);
 
     // Convert to file download
     const link = document.createElement('a');

@@ -127,6 +127,7 @@ const en = {
   'reception.print.est.wait': 'Est. Wait:',
   'reception.print.mins': 'Mins',
   'reception.print.thankyou': 'Thank you.',
+  'reception.print.footer': 'Thank you for waiting.',
 
   // Doctor
   'doctor.title': 'Doctor Dashboard',

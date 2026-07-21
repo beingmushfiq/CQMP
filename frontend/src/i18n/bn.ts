@@ -127,6 +127,7 @@ const bn: Record<string, string> = {
   'reception.print.est.wait': 'আনুমানিক অপেক্ষা:',
   'reception.print.mins': 'মিনিট',
   'reception.print.thankyou': 'ধন্যবাদ।',
+  'reception.print.footer': 'অপেক্ষা করার জন্য ধন্যবাদ।',
 
   // Doctor
   'doctor.title': 'ডাক্তার ড্যাশবোর্ড',
