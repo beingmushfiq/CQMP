@@ -22,7 +22,7 @@ interface BookingResult {
 const publicApi = axios.create({ baseURL: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'}` });
 
 export const LoginForm: React.FC = () => {
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(() => window.location.pathname === '/login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -61,7 +61,7 @@ export const LoginForm: React.FC = () => {
     try {
       await login(email, password);
     } catch (err: any) {
-      setLoginError(err.response?.data?.message || 'Login failed.');
+      setLoginError(err.response?.data?.message || t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export const LoginForm: React.FC = () => {
 
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!doctorId) { setBookingError('Please select a doctor.'); return; }
+    if (!doctorId) { setBookingError(t('login.error.select.doctor')); return; }
     setBookingError('');
     setBookingLoading(true);
     try {
@@ -80,7 +80,7 @@ export const LoginForm: React.FC = () => {
       });
       setResult(r.data);
     } catch (err: any) {
-      setBookingError(err.response?.data?.message || 'Booking failed.');
+      setBookingError(err.response?.data?.message || t('login.error.booking'));
     } finally {
       setBookingLoading(false);
     }
@@ -121,7 +121,7 @@ export const LoginForm: React.FC = () => {
 
     ctx.fillStyle = '#34d399';
     ctx.font = 'normal 14px sans-serif';
-    ctx.fillText('YOUR SERIAL NUMBER', 300, 100);
+    ctx.fillText(t('login.serial.title'), 300, 100);
 
     ctx.fillStyle = '#10b981';
     ctx.font = '900 80px sans-serif';
@@ -133,18 +133,18 @@ export const LoginForm: React.FC = () => {
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'normal 14px sans-serif';
-    ctx.fillText(`Phone: ${result.patient.phone || 'N/A'}`, 300, 265);
+    ctx.fillText(`${t('login.canvas.phone')} ${result.patient.phone || 'N/A'}`, 300, 265);
 
     ctx.fillStyle = '#e2e8f0';
     ctx.font = '600 16px sans-serif';
-    ctx.fillText(`Doctor: ${doctorName}`, 300, 310);
+    ctx.fillText(`${t('login.canvas.doctor')} ${doctorName}`, 300, 310);
 
     const now = new Date();
     const dateStr = now.toLocaleDateString();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     ctx.fillStyle = '#64748b';
     ctx.font = 'normal 12px sans-serif';
-    ctx.fillText(`Booked on: ${dateStr} at ${timeStr}`, 300, 355);
+    ctx.fillText(`${t('login.canvas.booked.on')} ${dateStr} at ${timeStr}`, 300, 355);
 
     const link = document.createElement('a');
     link.download = `token_${result.serial_no}_${result.patient.name.toLowerCase().replace(/\s+/g, '_')}.png`;
@@ -200,14 +200,14 @@ export const LoginForm: React.FC = () => {
                 <CheckCircle className="w-10 h-10 text-emerald-500 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-slate-500 dark:text-slate-300 text-xs">Your serial number is</p>
+                <p className="text-slate-500 dark:text-slate-300 text-xs">{t('login.serial.your')}</p>
                 <p className="text-7xl font-black text-emerald-500 dark:text-emerald-400 my-2">#{result.serial_no}</p>
-                <p className="text-slate-500 dark:text-slate-400 text-xs">Booked for <span className="text-slate-900 dark:text-white font-semibold">{result.patient.name}</span></p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs">{t('login.serial.booked.for')} <span className="text-slate-900 dark:text-white font-semibold">{result.patient.name}</span></p>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-transparent rounded-lg p-3 text-[10px] text-slate-500 dark:text-slate-400 text-left space-y-1">
-                <p>• Please be present when your number is called.</p>
-                <p>• Check the display board for live updates.</p>
-                <p>• Inform the receptionist if you need to leave.</p>
+                <p>• {t('login.notice.present')}</p>
+                <p>• {t('login.notice.display')}</p>
+                <p>• {t('login.notice.receptionist')}</p>
               </div>
               <div className="flex gap-3">
                 <button
@@ -216,14 +216,14 @@ export const LoginForm: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-all active:scale-[0.98] cursor-pointer text-xs min-h-[48px]"
                   aria-label="Save Token"
                 >
-                  <Download className="w-4 h-4" /> Save Token
+                  <Download className="w-4 h-4" /> {t('login.save.token')}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setResult(null); setPatientName(''); setPhone(''); }}
                   className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg transition-all active:scale-[0.98] cursor-pointer text-xs min-h-[48px]"
                 >
-                  Book Another
+                  {t('login.book.another')}
                 </button>
               </div>
             </div>
@@ -236,7 +236,7 @@ export const LoginForm: React.FC = () => {
               {/* Doctor */}
               <div>
                 <label htmlFor="login-doctor-select" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5">
-                  <Stethoscope className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> Doctor
+                  <Stethoscope className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t('login.doctor')}
                 </label>
                 {doctors.length === 1 ? (
                   <div className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 text-slate-900 dark:text-white text-xs flex items-center gap-2 min-h-[48px]">
@@ -251,7 +251,7 @@ export const LoginForm: React.FC = () => {
                     onChange={(e) => setDoctorId(Number(e.target.value))}
                     className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none min-h-[48px]"
                   >
-                    <option value="" disabled>Select doctor</option>
+                    <option value="" disabled>{t('login.select.doctor')}</option>
                     {doctors.map((d) => (
                       <option key={d.id} value={d.id}>{d.name} — {d.specialization}</option>
                     ))}
@@ -262,7 +262,7 @@ export const LoginForm: React.FC = () => {
               {/* Name */}
               <div>
                 <label htmlFor="login-patient-name" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5">
-                  <User className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> Full Name
+                  <User className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t('login.full.name')}
                 </label>
                 <input
                   id="login-patient-name"
@@ -278,8 +278,8 @@ export const LoginForm: React.FC = () => {
               {/* Phone */}
               <div>
                 <label htmlFor="login-patient-phone" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5">
-                  <Phone className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> Phone
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-normal">(Optional)</span>
+                  <Phone className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t('login.phone')}
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-normal">{t('login.phone.optional')}</span>
                 </label>
                 <input
                   id="login-patient-phone"
@@ -301,7 +301,7 @@ export const LoginForm: React.FC = () => {
                 ) : (
                   <>
                     <CalendarCheck className="w-4 h-4" />
-                    Book Serial
+                    {t('login.book.serial')}
                   </>
                 )}
               </button>
@@ -318,7 +318,7 @@ export const LoginForm: React.FC = () => {
             <div className="flex justify-between items-center mb-5">
               <div className="flex items-center gap-2">
                 <LogIn className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Staff Login</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('login.staff.login')}</h3>
               </div>
               <button
                 onClick={() => setShowLogin(false)}
@@ -334,7 +334,7 @@ export const LoginForm: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5" htmlFor="modal-email">Email or Name</label>
+                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5" htmlFor="modal-email">{t('login.email')}</label>
                 <input
                   id="modal-email"
                   type="text"
@@ -348,7 +348,7 @@ export const LoginForm: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5" htmlFor="modal-password">Password</label>
+                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5" htmlFor="modal-password">{t('login.password')}</label>
                 <input
                   id="modal-password"
                   type="password"

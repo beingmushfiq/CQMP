@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useLanguageStore } from '../store/useLanguageStore';
 import api from '../utils/api';
 import { Save, Upload, Check, AlertCircle, Settings, Building2, User } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { settings, fetchSettings, updateSettings, get } = useSettingsStore();
+  const { t } = useLanguageStore();
   const [form, setForm] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -31,9 +33,9 @@ export const SettingsPage: React.FC = () => {
     setMsg(null);
     try {
       await updateSettings(form);
-      setMsg({ type: 'success', text: 'Settings saved successfully.' });
+      setMsg({ type: 'success', text: t('settings.saved') });
     } catch {
-      setMsg({ type: 'error', text: 'Failed to save settings.' });
+      setMsg({ type: 'error', text: t('settings.failed') });
     } finally {
       setSaving(false);
     }
@@ -72,20 +74,20 @@ export const SettingsPage: React.FC = () => {
           <Settings className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Settings</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Manage site configuration</p>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">{t('settings.title')}</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('settings.subtitle')}</p>
         </div>
       </div>
 
       {/* Site Identity */}
       <div className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-5 space-y-4">
         <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white">
-          <Building2 className="w-4 h-4 text-indigo-500" /> Site Identity
+          <Building2 className="w-4 h-4 text-indigo-500" /> {t('settings.site.identity')}
         </h2>
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Site Title</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('settings.site.title')}</label>
             <input
               type="text"
               value={form.site_title || ''}
@@ -95,7 +97,7 @@ export const SettingsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Site Subtitle</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('settings.site.subtitle')}</label>
             <input
               type="text"
               value={form.site_subtitle || ''}
@@ -109,7 +111,7 @@ export const SettingsPage: React.FC = () => {
         {/* Logo & Favicon */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Logo</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{t('settings.logo')}</label>
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                 <img src={logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
@@ -120,13 +122,13 @@ export const SettingsPage: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer transition-all"
               >
                 <Upload className="w-3.5 h-3.5" />
-                {uploading === 'logo' ? 'Uploading...' : 'Upload'}
+                {uploading === 'logo' ? t('settings.uploading') : t('settings.upload')}
               </button>
               <input ref={logoInput} type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'logo')} />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Favicon</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{t('settings.favicon')}</label>
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                 <img src={faviconUrl} alt="Favicon" className="w-10 h-10 object-contain" />
@@ -137,7 +139,7 @@ export const SettingsPage: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer transition-all"
               >
                 <Upload className="w-3.5 h-3.5" />
-                {uploading === 'favicon' ? 'Uploading...' : 'Upload'}
+                {uploading === 'favicon' ? t('settings.uploading') : t('settings.upload')}
               </button>
               <input ref={faviconInput} type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'favicon')} />
             </div>
@@ -148,12 +150,12 @@ export const SettingsPage: React.FC = () => {
       {/* Doctor Info */}
       <div className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-5 space-y-4">
         <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white">
-          <User className="w-4 h-4 text-indigo-500" /> Doctor Information
+          <User className="w-4 h-4 text-indigo-500" /> {t('settings.doctor.info')}
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Doctor Name</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('settings.doctor.name')}</label>
             <input
               type="text"
               value={form.doctor_name || ''}
@@ -163,7 +165,7 @@ export const SettingsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Specialization</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('settings.doctor.specialization')}</label>
             <input
               type="text"
               value={form.doctor_specialization || ''}
@@ -176,7 +178,7 @@ export const SettingsPage: React.FC = () => {
 
         {/* Doctor Image */}
         <div className="space-y-2">
-          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Doctor Photo</label>
+          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">{t('settings.doctor.photo')}</label>
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden">
               <img src={doctorImageUrl} alt="Doctor" className="w-full h-full object-cover" />
@@ -187,7 +189,7 @@ export const SettingsPage: React.FC = () => {
               className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer transition-all"
             >
               <Upload className="w-3.5 h-3.5" />
-              {uploading === 'doctor_image' ? 'Uploading...' : 'Upload Photo'}
+              {uploading === 'doctor_image' ? t('settings.uploading') : t('settings.doctor.upload.photo')}
             </button>
             <input ref={doctorImageInput} type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'doctor_image')} />
           </div>
@@ -202,7 +204,7 @@ export const SettingsPage: React.FC = () => {
           className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? t('settings.saving') : t('settings.save')}
         </button>
         {msg && (
           <p className={`text-xs flex items-center gap-1 ${msg.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>

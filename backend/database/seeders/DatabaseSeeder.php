@@ -25,32 +25,36 @@ class DatabaseSeeder extends Seeder
 
         // Create super admin user
         $admin = User::factory()->create([
-            'name'  => 'Super Admin',
-            'email' => 'admin@cqmp.local',
+            'name'     => 'Super Admin',
+            'email'    => 'admin@cqmp.local',
+            'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
         ]);
         $admin->assignRole($superAdmin);
 
         // Create Doctor user
         $docRole = Role::firstOrCreate(['name' => 'Doctor']);
         $doctorUser = User::factory()->create([
-            'name'  => 'Doctor User',
-            'email' => 'doctor@cqmp.local',
+            'name'     => 'Doctor User',
+            'email'    => 'doctor@cqmp.local',
+            'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
         ]);
         $doctorUser->assignRole($docRole);
 
         // Create Receptionist user
         $recRole = Role::firstOrCreate(['name' => 'Receptionist']);
         $receptionistUser = User::factory()->create([
-            'name'  => 'Receptionist User',
-            'email' => 'receptionist@cqmp.local',
+            'name'     => 'Receptionist User',
+            'email'    => 'receptionist@cqmp.local',
+            'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
         ]);
         $receptionistUser->assignRole($recRole);
 
         // Create TV user
         $tvRole = Role::firstOrCreate(['name' => 'TV']);
         $tvUser = User::factory()->create([
-            'name'  => 'TV Board Display',
-            'email' => 'tv@cqmp.local',
+            'name'     => 'TV Board Display',
+            'email'    => 'tv@cqmp.local',
+            'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
         ]);
         $tvUser->assignRole($tvRole);
 

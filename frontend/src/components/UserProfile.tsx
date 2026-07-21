@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, Save, Lock, User, Check, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useLanguageStore } from '../store/useLanguageStore';
 import api from '../utils/api';
 
 interface UserProfileProps {
@@ -11,6 +12,7 @@ interface UserProfileProps {
 
 export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
   const { user, updateUser } = useAuthStore();
+  const { t } = useLanguageStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Name
@@ -64,9 +66,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
     try {
       await api.put('/profile/name', { name: name.trim() });
       updateUser({ name: name.trim() });
-      setNameMsg({ type: 'success', text: 'Name updated.' });
+      setNameMsg({ type: 'success', text: t('profile.saved') });
     } catch {
-      setNameMsg({ type: 'error', text: 'Failed to update name.' });
+      setNameMsg({ type: 'error', text: t('profile.save.failed') });
     } finally {
       setNameSaving(false);
     }
@@ -75,7 +77,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
   const handlePasswordSave = async () => {
     if (!currentPassword || !newPassword) return;
     if (newPassword !== confirmPassword) {
-      setPwMsg({ type: 'error', text: 'Passwords do not match.' });
+      setPwMsg({ type: 'error', text: t('profile.password.mismatch') });
       return;
     }
     setPwSaving(true);
@@ -86,12 +88,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
         password: newPassword,
         password_confirmation: confirmPassword,
       });
-      setPwMsg({ type: 'success', text: 'Password updated.' });
+      setPwMsg({ type: 'success', text: t('profile.password.updated') });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setPwMsg({ type: 'error', text: err?.response?.data?.message || 'Failed to update password.' });
+      setPwMsg({ type: 'error', text: err?.response?.data?.message || t('profile.password.failed') });
     } finally {
       setPwSaving(false);
     }
@@ -119,7 +121,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
           >
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-slate-200/80 dark:border-slate-700/80">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">User Profile</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('profile.title')}</h2>
               <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-all">
                 <X className="w-5 h-5" />
               </button>
@@ -157,7 +159,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <Save className="w-4 h-4" />
-                    {avatarSaving ? 'Uploading...' : 'Save Avatar'}
+                    {avatarSaving ? t('profile.avatar.uploading') : t('profile.avatar.upload')}
                   </button>
                 )}
               </div>
@@ -165,7 +167,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
               {/* Name Section */}
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  <User className="w-3.5 h-3.5" /> Name
+                  <User className="w-3.5 h-3.5" /> {t('profile.name')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -180,7 +182,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    {nameSaving ? '...' : 'Save'}
+                    {nameSaving ? t('profile.saving') : t('profile.save')}
                   </button>
                 </div>
                 {nameMsg && (
@@ -194,25 +196,25 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
               {/* Password Section */}
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  <Lock className="w-3.5 h-3.5" /> Change Password
+                  <Lock className="w-3.5 h-3.5" /> {t('profile.password.change')}
                 </label>
                 <input
                   type="password"
-                  placeholder="Current password"
+                  placeholder={t('profile.password.current')}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
                 />
                 <input
                   type="password"
-                  placeholder="New password (min 8 characters)"
+                  placeholder={t('profile.password.new')}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
                 />
                 <input
                   type="password"
-                  placeholder="Confirm new password"
+                  placeholder={t('profile.password.confirm')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
@@ -222,7 +224,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ open, onClose }) => {
                   disabled={pwSaving || !currentPassword || !newPassword || !confirmPassword}
                   className="w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {pwSaving ? 'Updating...' : 'Update Password'}
+                  {pwSaving ? t('profile.password.updating') : t('profile.password.update')}
                 </button>
                 {pwMsg && (
                   <p className={`text-xs flex items-center gap-1 ${pwMsg.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>

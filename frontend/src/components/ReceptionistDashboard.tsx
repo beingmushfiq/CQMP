@@ -27,7 +27,7 @@ function saveSmartDefault(name: string, phone: string) {
 }
 
 export const ReceptionistDashboard: React.FC = () => {
-  const { queueDay, items, fetchTodayQueue, registerWalkIn, insertEmergency, reinsertItem, deleteItem, completeItem, skipItem, toggleQueuePause } = useQueueStore();
+  const { queueDay, items, fetchTodayQueue, registerWalkIn, insertEmergency, reinsertItem, deleteItem, completeItem, skipItem, toggleQueuePause, callNext } = useQueueStore();
   const { logout } = useAuthStore();
   const { get: getSetting } = useSettingsStore();
   const { t } = useLanguageStore();
@@ -289,7 +289,7 @@ export const ReceptionistDashboard: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="w-full max-w-lg bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-8 rounded-xl shadow-premium-lg text-center"
         >
-          <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Select active Doctor Queue</h2>
+          <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">{t('doctor.select.chamber')}</h2>
           <div className="space-y-3">
             {doctors.map((doc, idx) => (
               <button
@@ -333,13 +333,13 @@ export const ReceptionistDashboard: React.FC = () => {
         <div className="space-y-6">
           <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-xl space-y-4 shadow-premium">
             <h2 className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-              <UserPlus className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> Register Patient
+              <UserPlus className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> {t('reception.register')}
             </h2>
 
             <div className="space-y-3">
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-                  Patient Name <span className="font-normal text-slate-400 dark:text-slate-600">(N)</span>
+                  {t('reception.name')} <span className="font-normal text-slate-400 dark:text-slate-600">(N)</span>
                 </label>
                 <input
                   id="patient-name-input"
@@ -347,14 +347,14 @@ export const ReceptionistDashboard: React.FC = () => {
                   value={patientName}
                   onChange={(e) => setPatientName(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"
-                  placeholder="Enter full name"
+                  placeholder={t('reception.name.placeholder')}
                   autoFocus
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-                  Phone Number <span className="font-normal text-slate-400 dark:text-slate-600">Optional (F)</span>
+                  {t('reception.phone')} <span className="font-normal text-slate-400 dark:text-slate-600">{t('reception.phone.optional')}</span>
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -363,7 +363,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     value={searchPhone}
                     onChange={(e) => setSearchPhone(e.target.value)}
                     className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"
-                    placeholder="017xxxxxxxx"
+                    placeholder={t('reception.phone.placeholder')}
                   />
                   <button
                     onClick={handleSearchPatient}
@@ -377,7 +377,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-                  Custom Serial No. <span className="font-normal text-slate-400 dark:text-slate-600">(S)</span>
+                  {t('reception.custom.serial')} <span className="font-normal text-slate-400 dark:text-slate-600">(S)</span>
                 </label>
                 <input
                   id="custom-serial-input"
@@ -394,7 +394,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-400 flex items-start gap-2">
                   <ShieldAlert className="w-4 h-4 shrink-0" />
                   <div>
-                    <p className="font-bold">Patient Blocked</p>
+                    <p className="font-bold">{t('reception.patient.blocked')}</p>
                     <p>{patientRecord.blocked_reason}</p>
                   </div>
                 </div>
@@ -479,7 +479,17 @@ export const ReceptionistDashboard: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-slate-400 dark:text-slate-500 text-xs mt-2">Chamber is currently empty</p>
+                  <div className="mt-2">
+                    <p className="text-slate-400 dark:text-slate-500 text-xs mb-3">{t('reception.chamber.empty')}</p>
+                    {waitingItems.length > 0 && queueDay?.status === 'opened' && (
+                      <button
+                        onClick={callNext}
+                        className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold cursor-pointer shadow-md shadow-indigo-600/10 transition-all"
+                      >
+                        <PhoneCall className="w-4 h-4" /> {t('doctor.call.next')}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
               <PhoneCall className="w-8 h-8 text-indigo-400/40 dark:text-indigo-400/30" />

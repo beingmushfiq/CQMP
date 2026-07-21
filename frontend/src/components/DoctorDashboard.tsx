@@ -61,7 +61,7 @@ export const DoctorDashboard: React.FC = () => {
     try {
       await openQueue(selectedDoctorId);
     } catch (err: any) {
-      setOpenError(err?.response?.data?.message || 'Failed to open queue.');
+      setOpenError(err?.response?.data?.message || t('doctor.alert.open.failed'));
     } finally {
       setOpening(false);
     }
@@ -71,9 +71,9 @@ export const DoctorDashboard: React.FC = () => {
     if (!selectedDoctorId) return;
     try {
       await api.post('/doctor/delay', { doctor_id: selectedDoctorId, delay_minutes: delayMinutes });
-      alert(`Doctor delay of ${delayMinutes} mins updated.`);
+      alert(t('doctor.alert.delay.updated', { mins: delayMinutes }));
     } catch {
-      alert('Failed to update delay.');
+      alert(t('doctor.alert.delay.failed'));
     }
   };
 
@@ -87,7 +87,7 @@ export const DoctorDashboard: React.FC = () => {
           transition={{ duration: 0.3 }}
           className="w-full max-w-lg bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-8 rounded-xl shadow-premium-lg text-center"
         >
-          <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">Select active Doctor Chamber</h2>
+          <h2 className="text-xl font-bold mb-6 text-slate-900 dark:text-white">{t('doctor.select.chamber')}</h2>
           <div className="space-y-3">
             {doctors.map((doc, idx) => (
               <button
@@ -108,7 +108,7 @@ export const DoctorDashboard: React.FC = () => {
           </div>
           <div className="mt-8 flex justify-end">
             <button onClick={() => logout()} className="text-rose-500 dark:text-rose-400 text-xs font-medium cursor-pointer hover:underline">
-              Sign Out [Q]
+              {t('doctor.sign.out')} [Q]
             </button>
           </div>
         </motion.div>
@@ -127,7 +127,7 @@ export const DoctorDashboard: React.FC = () => {
               <img src={getSetting('logo_path') ? `http://localhost:8000/storage/${getSetting('logo_path')}` : '/favicon.svg'} alt="Logo" className="w-8 h-8 rounded-lg shadow-md" />
               <div>
                 <h1 className="text-sm font-bold">{doctors.find(d => d.id === selectedDoctorId)?.name}</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider font-semibold">Doctor Control Panel</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider font-semibold">{t('doctor.control.panel')}</p>
               </div>
             </div>
             <div className="flex gap-2 md:gap-3 items-center">
@@ -140,7 +140,7 @@ export const DoctorDashboard: React.FC = () => {
                     ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                     : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
                 }`}>
-                  {queueDay?.status === 'opened' ? 'Open' : queueDay?.status === 'paused' ? 'Paused' : 'Closed'}
+                  {queueDay?.status === 'opened' ? t('doctor.status.open') : queueDay?.status === 'paused' ? t('doctor.status.paused') : t('doctor.status.closed')}
                 </span>
               </div>
               <span className="text-slate-500 dark:text-slate-400 text-xs hidden lg:inline">{user?.name}</span>
@@ -148,7 +148,7 @@ export const DoctorDashboard: React.FC = () => {
                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
               <button onClick={() => logout()} className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
-                <LogOut className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sign Out</span>
+                <LogOut className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t('doctor.sign.out')}</span>
               </button>
             </div>
           </div>
@@ -157,8 +157,8 @@ export const DoctorDashboard: React.FC = () => {
         {!queueDay ? (
           <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-8 rounded-xl text-center space-y-4 shadow-premium">
             <AlertCircle className="w-10 h-10 text-indigo-400 mx-auto" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Queue Session is Closed</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-xs">Open today's queue session to start receiving patients.</p>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('doctor.queue.closed')}</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-xs">{t('doctor.queue.open.desc')}</p>
             {openError && (
               <p className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 px-4 py-2 rounded-lg">{openError}</p>
             )}
@@ -167,7 +167,7 @@ export const DoctorDashboard: React.FC = () => {
               disabled={opening}
               className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-2.5 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/20 cursor-pointer transition-all"
             >
-              {opening ? 'Opening...' : 'Open Queue Session [O]'}
+              {opening ? t('doctor.queue.opening') : t('doctor.queue.open.btn')}
             </button>
           </motion.div>
         ) : (
@@ -176,7 +176,7 @@ export const DoctorDashboard: React.FC = () => {
             <div className="space-y-6">
               {/* Queue Status */}
               <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-xl space-y-3 shadow-premium">
-                <h2 className="text-xs font-bold text-slate-900 dark:text-white">Queue Control</h2>
+                <h2 className="text-xs font-bold text-slate-900 dark:text-white">{t('doctor.queue.control')}</h2>
                 <button
                   onClick={toggleQueuePause}
                   className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold text-sm cursor-pointer transition-all active:scale-[0.98] min-h-[48px] ${
@@ -185,16 +185,16 @@ export const DoctorDashboard: React.FC = () => {
                       : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                   }`}
                 >
-                  {queueDay.status === 'opened' ? <><Pause className="w-4 h-4" /> Pause [P]</> : <><Play className="w-4 h-4" /> Resume [P]</>}
+                  {queueDay.status === 'opened' ? <><Pause className="w-4 h-4" /> {t('doctor.pause')} [P]</> : <><Play className="w-4 h-4" /> {t('doctor.resume')} [P]</>}
                 </button>
               </motion.div>
 
               {/* Doctor Delay */}
               <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-xl space-y-3 shadow-premium">
                 <h2 className="text-xs font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                  <Clock className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> Announce Delay
+                  <Clock className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> {t('doctor.announce.delay')}
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-[10px]">Add temporary delays to adjust patient wait times.</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px]">{t('doctor.delay.desc')}</p>
                 <div className="flex gap-2">
                   <input
                     id="delay-input"
@@ -202,13 +202,13 @@ export const DoctorDashboard: React.FC = () => {
                     value={delayMinutes}
                     onChange={(e) => setDelayMinutes(parseInt(e.target.value) || 0)}
                     className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs min-h-[44px]"
-                    placeholder="Mins"
+                    placeholder={t('doctor.delay.mins')}
                   />
                   <button onClick={submitDelay} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg font-semibold text-xs cursor-pointer active:scale-[0.98] transition-all min-h-[44px]">
-                    Apply
+                    {t('doctor.delay.apply')}
                   </button>
                 </div>
-                <p className="text-slate-400 text-[10px] text-right">Press <kbd className="bg-slate-200 dark:bg-slate-700 px-1 rounded">D</kbd> to focus</p>
+                <p className="text-slate-400 text-[10px] text-right">{t('doctor.delay.press.d')}</p>
               </motion.div>
             </div>
 
@@ -217,7 +217,7 @@ export const DoctorDashboard: React.FC = () => {
               {/* Active Consultation Panel */}
               <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-xl relative overflow-hidden shadow-premium">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" />
-                <h2 className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 mb-4">Inside Chamber / Called</h2>
+                <h2 className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 mb-4">{t('doctor.inside.chamber')}</h2>
 
                 <AnimatePresence mode="wait">
                   {activeItem ? (
@@ -230,14 +230,14 @@ export const DoctorDashboard: React.FC = () => {
                     >
                       <div>
                         <h3 className="text-2xl font-black text-slate-900 dark:text-white">{activeItem.patient.name}</h3>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Serial: {activeItem.serial_no} | Phone: {activeItem.patient.phone}</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{t('doctor.serial')} {activeItem.serial_no} | {t('doctor.phone')} {activeItem.patient.phone}</p>
                       </div>
                       <div className="flex gap-3">
                         <button
                           onClick={() => completeItem(activeItem.id)}
                           className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 active:scale-[0.98] cursor-pointer text-sm transition-all min-h-[48px]"
                         >
-                          <UserCheck className="w-4 h-4" /> Complete Visit [C]
+                          <UserCheck className="w-4 h-4" /> {t('doctor.complete.visit')}
                         </button>
                         <button
                           onClick={() => skipItem(activeItem.id)}
@@ -249,13 +249,13 @@ export const DoctorDashboard: React.FC = () => {
                     </motion.div>
                   ) : (
                     <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6 text-center space-y-3">
-                      <p className="text-slate-400 dark:text-slate-500 text-xs">No patient is currently inside the chamber.</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs">{t('doctor.no.patient.chamber')}</p>
                       <button
                         onClick={callNext}
                         disabled={waitingItems.length === 0}
                         className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-6 py-3.5 rounded-xl font-semibold text-sm shadow-md shadow-indigo-600/20 active:scale-[0.98] cursor-pointer transition-all min-h-[48px]"
                       >
-                        Call Next Patient [N]
+                        {t('doctor.call.next')}
                       </button>
                     </motion.div>
                   )}
@@ -265,12 +265,12 @@ export const DoctorDashboard: React.FC = () => {
               {/* Waiting List */}
               <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-xl space-y-4 shadow-premium">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-xs font-bold text-slate-900 dark:text-white">Waiting Queue ({waitingItems.length})</h2>
+                  <h2 className="text-xs font-bold text-slate-900 dark:text-white">{t('doctor.waiting.queue')} ({waitingItems.length})</h2>
 
                 </div>
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                   {waitingItems.length === 0 ? (
-                    <p className="text-slate-400 dark:text-slate-500 text-xs py-4 text-center">No waiting patients.</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-xs py-4 text-center">{t('doctor.no.waiting')}</p>
                   ) : (
                     waitingItems.map((item) => (
                       <div
@@ -283,7 +283,7 @@ export const DoctorDashboard: React.FC = () => {
                           <span className="font-bold text-indigo-600 dark:text-indigo-400">#{item.serial_no}</span>
                           <span className="font-semibold text-slate-900 dark:text-white">{item.patient.name}</span>
                           {item.priority === 'Emergency' && (
-                            <span className="text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-full font-bold">Emergency</span>
+                            <span className="text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-full font-bold">{t('doctor.emergency')}</span>
                           )}
                         </div>
 
@@ -323,14 +323,14 @@ export const DoctorDashboard: React.FC = () => {
             className="flex flex-col items-center gap-1 px-3 py-1.5 text-slate-400 dark:text-slate-500 cursor-pointer"
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            <span className="text-[10px] font-semibold">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+            <span className="text-[10px] font-semibold">{theme === 'dark' ? t('nav.theme.light') : t('nav.theme.dark')}</span>
           </button>
           <button
             onClick={() => logout()}
             className="flex flex-col items-center gap-1 px-3 py-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
-            <span className="text-[10px] font-semibold">Logout</span>
+            <span className="text-[10px] font-semibold">{t('nav.logout')}</span>
           </button>
         </div>
       </nav>

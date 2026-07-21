@@ -137,10 +137,10 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? t('sidebar.expand.title') : t('sidebar.collapse.title')}
           >
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            {!sidebarCollapsed && <span>Collapse</span>}
+            {!sidebarCollapsed && <span>{t('sidebar.collapse')}</span>}
           </button>
         </div>
       </aside>
@@ -177,7 +177,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
             <button
               onClick={toggleLang}
               className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all text-xs font-bold"
-              title={lang === 'en' ? 'Switch to Bangla' : 'Switch to English'}
+              title={lang === 'en' ? t('lang.switch.to.bn') : t('lang.switch.to.en')}
             >
               {lang === 'en' ? 'BN' : 'EN'}
             </button>
@@ -193,7 +193,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
                   {user?.name?.charAt(0)?.toUpperCase() || '?'}
                 </span>
               )}
-              <span className="font-medium">{user?.name || 'Loading...'}</span>
+              <span className="font-medium">{user?.name || t('sidebar.loading')}</span>
             </button>
 
             <button

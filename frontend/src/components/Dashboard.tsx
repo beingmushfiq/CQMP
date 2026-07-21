@@ -68,7 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-              {user?.name || 'User'}
+              {user?.name || t('dashboard.welcome')}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {userRoles.join(' • ')} — {getSetting('site_title', 'CQMP')}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CalendarCheck, Stethoscope, Phone, User, CheckCircle, Download } from 'lucide-react';
 import axios from 'axios';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
+import { useLanguageStore } from '../store/useLanguageStore';
 
 interface Doctor {
   id: number;
@@ -22,6 +23,7 @@ interface Props {
 const publicApi = axios.create({ baseURL: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'}` });
 
 export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
+  const { t } = useLanguageStore();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [name, setName] = useState('');
@@ -54,7 +56,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
       if (doctorId && name && !loading) {
         publicApi.post('/public/book', { name, phone: phone || undefined, doctor_id: doctorId })
           .then((r) => setResult(r.data))
-          .catch((err) => setError(err.response?.data?.message || 'Booking failed.'));
+          .catch((err) => setError(err.response?.data?.message || t('visitor.error.booking')));
       }
     },
     'b': () => {
@@ -71,7 +73,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
 
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!doctorId) { setError('Please select a doctor.'); return; }
+    if (!doctorId) { setError(t('visitor.error.select.doctor')); return; }
     setError('');
     setLoading(true);
     try {
@@ -82,7 +84,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
       });
       setResult(r.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Booking failed. Please try again at the reception desk.');
+      setError(err.response?.data?.message || t('visitor.error.retry'));
     } finally {
       setLoading(false);
     }
@@ -123,12 +125,12 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
     ctx.fillStyle = '#94a3b8'; // slate-400
     ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('CLINIC QUEUE MANAGEMENT PLATFORM', 300, 55);
+    ctx.fillText(t('visitor.canvas.title'), 300, 55);
 
     // Serial Label
     ctx.fillStyle = '#34d399'; // emerald-400
     ctx.font = 'normal 14px sans-serif';
-    ctx.fillText('YOUR SERIAL NUMBER', 300, 100);
+    ctx.fillText(t('visitor.canvas.serial'), 300, 100);
 
     // Serial Number
     ctx.fillStyle = '#10b981'; // emerald-500
@@ -142,12 +144,12 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'normal 14px sans-serif';
-    ctx.fillText(`Phone: ${result.patient.phone || 'N/A'}`, 300, 265);
+    ctx.fillText(`${t('visitor.canvas.phone')} ${result.patient.phone || 'N/A'}`, 300, 265);
 
     // Doctor Info
     ctx.fillStyle = '#e2e8f0';
     ctx.font = '600 16px sans-serif';
-    ctx.fillText(`Doctor: ${doctorName}`, 300, 310);
+    ctx.fillText(`${t('visitor.canvas.doctor')} ${doctorName}`, 300, 310);
 
     // Timestamp
     const now = new Date();
@@ -155,7 +157,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     ctx.fillStyle = '#64748b';
     ctx.font = 'normal 12px sans-serif';
-    ctx.fillText(`Booked on: ${dateStr} at ${timeStr}`, 300, 355);
+    ctx.fillText(`${t('visitor.canvas.booked.on')} ${dateStr} at ${timeStr}`, 300, 355);
 
     // Convert to file download
     const link = document.createElement('a');
@@ -175,7 +177,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
             onClick={onBack}
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Login [B]
+            <ArrowLeft className="w-4 h-4" /> {t('visitor.back')}
           </button>
         )}
 
@@ -184,8 +186,8 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 mb-4">
               <CalendarCheck className="w-7 h-7 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Book Appointment</h1>
-            <p className="text-slate-400 text-sm mt-1">Walk-in queue booking — today only</p>
+            <h1 className="text-2xl font-bold text-white">{t('visitor.title')}</h1>
+            <p className="text-slate-400 text-sm mt-1">{t('visitor.subtitle')}</p>
           </div>
 
           {result ? (
@@ -195,14 +197,14 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                 <CheckCircle className="w-10 h-10 text-emerald-400" />
               </div>
               <div>
-                <p className="text-slate-300 text-sm">Your serial number is</p>
+                <p className="text-slate-300 text-sm">{t('visitor.serial.your')}</p>
                 <p className="text-7xl font-black text-emerald-400 my-2">#{result.serial_no}</p>
-                <p className="text-slate-400 text-sm">Booked for <span className="text-white font-semibold">{result.patient.name}</span></p>
+                <p className="text-slate-400 text-sm">{t('visitor.serial.booked.for')} <span className="text-white font-semibold">{result.patient.name}</span></p>
               </div>
               <div className="bg-slate-800/60 rounded-xl p-4 text-sm text-slate-400 text-left space-y-1">
-                <p>• Please be present when your number is called.</p>
-                <p>• Check the display board for live updates.</p>
-                <p>• Inform the receptionist if you need to leave.</p>
+                <p>• {t('visitor.notice.present')}</p>
+                <p>• {t('visitor.notice.display')}</p>
+                <p>• {t('visitor.notice.receptionist')}</p>
               </div>
               <div className="flex gap-3">
                 <button
@@ -233,7 +235,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
               {/* Doctor Select */}
               <div>
                 <label htmlFor="doctor-select" className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
-                  <Stethoscope className="w-4 h-4 text-emerald-400" /> Select Doctor <span className="text-xs text-slate-500 font-normal ml-auto">(Press [1], [2], etc.)</span>
+                  <Stethoscope className="w-4 h-4 text-emerald-400" /> {t('visitor.select.doctor')} <span className="text-xs text-slate-500 font-normal ml-auto">{t('visitor.doctor.shortcut')}</span>
                 </label>
                 <select
                   id="doctor-select"
@@ -242,7 +244,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                   onChange={(e) => setDoctorId(Number(e.target.value))}
                   className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none min-h-[52px]"
                 >
-                  <option value="" disabled>-- Choose a doctor --</option>
+                  <option value="" disabled>{t('visitor.choose.doctor')}</option>
                   {doctors.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name} — {d.specialization}
@@ -254,7 +256,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
               {/* Name */}
               <div>
                 <label htmlFor="visitor-name-input" className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
-                  <User className="w-4 h-4 text-emerald-400" /> Your Full Name <span className="text-xs text-slate-500 font-normal ml-auto">(Press <kbd className="bg-slate-800 px-1 rounded">N</kbd> to focus)</span>
+                  <User className="w-4 h-4 text-emerald-400" /> {t('visitor.full.name')} <span className="text-xs text-slate-500 font-normal ml-auto">{t('visitor.name.shortcut')}</span>
                 </label>
                 <input
                   id="visitor-name-input"
@@ -270,9 +272,9 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
               {/* Phone — optional */}
               <div>
                 <label htmlFor="visitor-phone-input" className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
-                  <Phone className="w-4 h-4 text-emerald-400" /> Phone Number
-                  <span className="text-xs text-emerald-600 dark:text-emerald-500 font-normal ml-1">(Optional)</span>
-                  <span className="text-xs text-slate-500 font-normal ml-auto">(Press <kbd className="bg-slate-800 px-1 rounded">F</kbd> to focus)</span>
+                  <Phone className="w-4 h-4 text-emerald-400" /> {t('visitor.phone')}
+                  <span className="text-xs text-emerald-600 dark:text-emerald-500 font-normal ml-1">{t('visitor.phone.optional')}</span>
+                  <span className="text-xs text-slate-500 font-normal ml-auto">{t('visitor.phone.shortcut')}</span>
                 </label>
                 <input
                   id="visitor-phone-input"
@@ -294,7 +296,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                 ) : (
                   <>
                     <CalendarCheck className="w-5 h-5" />
-                    Confirm Booking [S]
+                    {t('visitor.confirm.booking')}
                   </>
                 )}
               </button>

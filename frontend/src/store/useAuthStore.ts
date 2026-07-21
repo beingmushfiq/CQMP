@@ -27,21 +27,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ loading: true });
 
-    // Demo bypass — no backend needed
-    if ((email === 'admin' || email === 'admin@cqmp.local') && password === '12345678') {
-      const demoUser: User = {
-        id: 1,
-        name: 'Admin',
-        email: 'admin@cqmp.local',
-        avatar: null,
-        roles: ['Super Admin'],
-      };
-      const demoToken = 'demo-token';
-      localStorage.setItem('cqmp_token', demoToken);
-      set({ token: demoToken, user: demoUser, loading: false });
-      return;
-    }
-
     try {
       const response = await api.post('/login', { email, password });
       const { token, user } = response.data;
