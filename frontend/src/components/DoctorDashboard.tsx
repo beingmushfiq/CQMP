@@ -179,7 +179,7 @@ export const DoctorDashboard: React.FC = () => {
                 <h2 className="text-xs font-bold text-slate-900 dark:text-white">Queue Control</h2>
                 <button
                   onClick={toggleQueuePause}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-semibold text-xs cursor-pointer transition-colors ${
+                  className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-semibold text-sm cursor-pointer transition-all active:scale-[0.98] min-h-[48px] ${
                     queueDay.status === 'opened'
                       ? 'bg-amber-600/10 hover:bg-amber-600/20 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                       : 'bg-emerald-600 hover:bg-emerald-500 text-white'
@@ -201,10 +201,10 @@ export const DoctorDashboard: React.FC = () => {
                     type="number"
                     value={delayMinutes}
                     onChange={(e) => setDelayMinutes(parseInt(e.target.value) || 0)}
-                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"
+                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs min-h-[44px]"
                     placeholder="Mins"
                   />
-                  <button onClick={submitDelay} className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg font-semibold text-xs cursor-pointer transition-all">
+                  <button onClick={submitDelay} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-lg font-semibold text-xs cursor-pointer active:scale-[0.98] transition-all min-h-[44px]">
                     Apply
                   </button>
                 </div>
@@ -235,13 +235,13 @@ export const DoctorDashboard: React.FC = () => {
                       <div className="flex gap-3">
                         <button
                           onClick={() => completeItem(activeItem.id)}
-                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md shadow-emerald-600/20 cursor-pointer text-xs transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 active:scale-[0.98] cursor-pointer text-sm transition-all min-h-[48px]"
                         >
                           <UserCheck className="w-4 h-4" /> Complete Visit [C]
                         </button>
                         <button
                           onClick={() => skipItem(activeItem.id)}
-                          className="flex-1 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold py-3 px-4 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer text-xs transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 active:scale-[0.98] cursor-pointer text-sm transition-all min-h-[48px]"
                         >
                           {t('doctor.skip')} [S]
                         </button>
@@ -253,7 +253,7 @@ export const DoctorDashboard: React.FC = () => {
                       <button
                         onClick={callNext}
                         disabled={waitingItems.length === 0}
-                        className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-5 py-2.5 rounded-lg font-semibold text-xs shadow-md shadow-indigo-600/20 cursor-pointer transition-all"
+                        className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-6 py-3.5 rounded-xl font-semibold text-sm shadow-md shadow-indigo-600/20 active:scale-[0.98] cursor-pointer transition-all min-h-[48px]"
                       >
                         Call Next Patient [N]
                       </button>
