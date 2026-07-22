@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
-import api from '../utils/api';
+import api, { getStorageBaseUrl } from '../utils/api';
 import { Save, Upload, Check, AlertCircle, Settings, Building2, User } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -63,9 +63,9 @@ export const SettingsPage: React.FC = () => {
 
   const update = (key: string, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const logoUrl = settings.logo_path ? `http://localhost:8000/storage/${settings.logo_path}` : '/favicon.svg';
-  const faviconUrl = settings.favicon_path ? `http://localhost:8000/storage/${settings.favicon_path}` : '/favicon.svg';
-  const doctorImageUrl = settings.doctor_image ? `http://localhost:8000/storage/${settings.doctor_image}` : '/doctor_portrait.png';
+  const logoUrl = settings.logo_path ? `${getStorageBaseUrl()}/storage/${settings.logo_path}` : '/favicon.svg';
+  const faviconUrl = settings.favicon_path ? `${getStorageBaseUrl()}/storage/${settings.favicon_path}` : '/favicon.svg';
+  const doctorImageUrl = settings.doctor_image ? `${getStorageBaseUrl()}/storage/${settings.doctor_image}` : '/doctor_portrait.png';
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../store/useQueueStore';
 import { echo } from '../utils/echo';
-import api from '../utils/api';
+import api, { getStorageBaseUrl } from '../utils/api';
 import { Monitor, Volume2, UserCheck, Play, Pause, Sun, Moon, Bookmark, Coffee, LogOut, Maximize, Minimize, User } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -24,7 +24,6 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const { t } = useLanguageStore();
   const [doctors, setDoctors] = useState<any[]>([]);
 
-  const receptionFooterText = getSetting('reception.print.footer', t('reception.print.footer'));
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'single' | 'lobby'>('single');
   const [lobbyQueues, setLobbyQueues] = useState<Record<number, { called: QueueItem | null; waiting: QueueItem[] }>>({});
@@ -172,7 +171,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
         </button>
         <button onClick={() => setProfileOpen(true)} className="flex flex-col items-center gap-1 px-3 py-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer">
           {user?.avatar ? (
-            <img src={`http://localhost:8000/storage/${user.avatar}`} alt="" className="w-5 h-5 rounded-full object-cover" />
+            <img src={`${getStorageBaseUrl()}/storage/${user.avatar}`} alt="" className="w-5 h-5 rounded-full object-cover" />
           ) : (
             <User className="w-5 h-5" />
           )}
@@ -422,7 +421,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
           </div>
 
           <div className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-4 md:p-6 rounded-xl flex items-center gap-4 md:gap-6 mb-3 md:mb-5 text-left">
-            <img src={getSetting('doctor_image') ? `http://localhost:8000/storage/${getSetting('doctor_image')}` : '/doctor_portrait.png'} alt="Doctor" className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-xl object-cover border border-slate-200 dark:border-slate-700/50 shrink-0" />
+            <img src={getSetting('doctor_image') ? `${getStorageBaseUrl()}/storage/${getSetting('doctor_image')}` : '/doctor_portrait.png'} alt="Doctor" className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-xl object-cover border border-slate-200 dark:border-slate-700/50 shrink-0" />
             <div className="min-w-0">
               <h3 className="font-bold text-lg md:text-2xl lg:text-3xl text-slate-900 dark:text-white truncate">{doctors.find((d) => d.id === selectedDoctorId)?.name}</h3>
               <p className="text-indigo-600 dark:text-indigo-400 text-sm md:text-lg font-semibold uppercase tracking-wider truncate">{doctors.find((d) => d.id === selectedDoctorId)?.specialization}</p>

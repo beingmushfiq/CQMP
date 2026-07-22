@@ -476,7 +476,7 @@ CQMP is a fully installable Progressive Web App.
 
 ### Prerequisites
 
-- **PHP** 8.3+
+- **PHP** 8.4.1+
 - **Composer** 2.x
 - **Node.js** 18+ with **npm** 9+
 - SQLite (bundled) *or* MySQL / PostgreSQL
@@ -486,7 +486,7 @@ CQMP is a fully installable Progressive Web App.
 ### ⚡ Quick Start (All-in-One)
 
 ```bash
-git clone https://github.com/your-org/cqmp.git
+git clone https://github.com/beingmushfiq/cqmp.git
 cd cqmp/backend
 
 # Install deps, generate key, run migrations
@@ -514,15 +514,12 @@ composer dev
 cd backend
 
 composer install
-cp .env.example .env
+php -r "file_exists('.env') || copy('.env.example', '.env');"
 php artisan key:generate
 
-# SQLite (default — no setup needed)
-touch database/database.sqlite
-php artisan migrate
-
-# Optional: seed demo data
-php artisan db:seed
+# SQLite (default)
+php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+php artisan migrate --seed
 
 # Start each in a separate terminal
 php artisan serve           # Terminal 1

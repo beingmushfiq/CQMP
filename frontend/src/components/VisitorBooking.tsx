@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CalendarCheck, Stethoscope, Phone, User, CheckCircle, Download } from 'lucide-react';
-import axios from 'axios';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { useLanguageStore } from '../store/useLanguageStore';
+import { createPublicApi } from '../utils/api';
 
 interface Doctor {
   id: number;
@@ -20,7 +20,7 @@ interface Props {
   onBack?: () => void;
 }
 
-const publicApi = axios.create({ baseURL: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'}` });
+const publicApi = createPublicApi();
 
 export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
   const { t } = useLanguageStore();

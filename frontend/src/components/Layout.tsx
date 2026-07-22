@@ -3,7 +3,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
-import api from '../utils/api';
+import api, { getStorageBaseUrl } from '../utils/api';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { UserProfile } from './UserProfile';
 import {
@@ -95,7 +95,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
           onClick={() => onTabChange('dashboard')}
           className="h-16 flex items-center gap-3 px-4 border-b border-slate-200/80 dark:border-slate-700/80 w-full cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
         >
-          <img src={getSetting('logo_path') ? `http://localhost:8000/storage/${getSetting('logo_path')}` : '/favicon.svg'} alt="Logo" className="w-8 h-8 rounded-lg shadow-md shrink-0" />
+          <img src={getSetting('logo_path') ? `${getStorageBaseUrl()}/storage/${getSetting('logo_path')}` : '/favicon.svg'} alt="Logo" className="w-8 h-8 rounded-lg shadow-md shrink-0" />
           {!sidebarCollapsed && (
             <span className="text-sm font-bold tracking-tight bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent whitespace-nowrap">
               {getSetting('site_title', 'CQMP')}
@@ -152,7 +152,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
           <div className="flex items-center gap-3">
             {/* Mobile logo */}
             <button onClick={() => onTabChange('reception')} className="md:hidden cursor-pointer">
-              <img src={getSetting('logo_path') ? `http://localhost:8000/storage/${getSetting('logo_path')}` : '/favicon.svg'} alt="Logo" className="w-8 h-8 rounded-lg shadow-md" />
+              <img src={getSetting('logo_path') ? `${getStorageBaseUrl()}/storage/${getSetting('logo_path')}` : '/favicon.svg'} alt="Logo" className="w-8 h-8 rounded-lg shadow-md" />
             </button>
             <h2 className="text-sm font-bold text-slate-800 dark:text-white">
               {t(navItems.find((n) => n.id === activeTab)?.labelKey || '')}
@@ -187,7 +187,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
               className="hidden md:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer transition-colors rounded-lg px-2 py-1"
             >
               {user?.avatar ? (
-                <img src={`http://localhost:8000/storage/${user.avatar}`} alt="" className="w-7 h-7 rounded-full object-cover" />
+                <img src={`${getStorageBaseUrl()}/storage/${user.avatar}`} alt="" className="w-7 h-7 rounded-full object-cover" />
               ) : (
                 <span className="w-7 h-7 rounded-full bg-indigo-600/15 dark:bg-indigo-600/25 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
                   {user?.name?.charAt(0)?.toUpperCase() || '?'}
@@ -238,7 +238,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
             className="flex flex-col items-center gap-1 px-3 py-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
           >
             {user?.avatar ? (
-              <img src={`http://localhost:8000/storage/${user.avatar}`} alt="" className="w-5 h-5 rounded-full object-cover" />
+              <img src={`${getStorageBaseUrl()}/storage/${user.avatar}`} alt="" className="w-5 h-5 rounded-full object-cover" />
             ) : (
               <span className="w-5 h-5 rounded-full bg-indigo-600/15 dark:bg-indigo-600/25 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-[8px]">
                 {user?.name?.charAt(0)?.toUpperCase() || '?'}

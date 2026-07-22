@@ -5,7 +5,7 @@ import { useLanguageStore } from '../store/useLanguageStore';
 import { LogIn, CalendarCheck, Stethoscope, Phone, User, CheckCircle, X, Sun, Moon, Download } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
-import axios from 'axios';
+import { createPublicApi } from '../utils/api';
 
 interface Doctor {
   id: number;
@@ -19,7 +19,7 @@ interface BookingResult {
   patient: { name: string; phone: string };
 }
 
-const publicApi = axios.create({ baseURL: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'}` });
+const publicApi = createPublicApi();
 
 export const LoginForm: React.FC = () => {
   const [showLogin, setShowLogin] = useState(() => window.location.pathname === '/login');
