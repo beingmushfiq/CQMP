@@ -23,6 +23,8 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const { get: getSetting } = useSettingsStore();
   const { t } = useLanguageStore();
   const [doctors, setDoctors] = useState<any[]>([]);
+
+  const receptionFooterText = getSetting('reception.print.footer', t('reception.print.footer'));
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'single' | 'lobby'>('single');
   const [lobbyQueues, setLobbyQueues] = useState<Record<number, { called: QueueItem | null; waiting: QueueItem[] }>>({});

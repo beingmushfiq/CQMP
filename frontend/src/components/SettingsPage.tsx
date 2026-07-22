@@ -25,6 +25,7 @@ export const SettingsPage: React.FC = () => {
       site_subtitle: get('site_subtitle', 'Clinic Queue Management Platform'),
       doctor_name: get('doctor_name', ''),
       doctor_specialization: get('doctor_specialization', ''),
+      'reception.print.footer': get('reception.print.footer', t('reception.print.footer')),
     });
   }, [settings]);
 
@@ -193,6 +194,24 @@ export const SettingsPage: React.FC = () => {
             </button>
             <input ref={doctorImageInput} type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, 'doctor_image')} />
           </div>
+        </div>
+      </div>
+
+      {/* TV Display Footer Text */}
+      <div className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-5 space-y-4">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white">
+          <Building2 className="w-4 h-4 text-indigo-500" /> {t('settings.tv.footer.heading')}
+        </h2>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{t('settings.tv.footer.label')}</label>
+          <textarea
+            value={form['reception.print.footer'] || ''}
+            onChange={(e) => update('reception.print.footer', e.target.value)}
+            className="w-full min-h-[100px] px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all resize-none"
+            placeholder={t('settings.tv.footer.placeholder')}
+            rows={4}
+          />
         </div>
       </div>
 
