@@ -6,8 +6,24 @@ export const getApiBaseUrl = () => {
     return configured.replace(/\/$/, '');
   }
 
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return 'http://localhost:8000/api/v1';
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location;
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8000/api/v1';
+    }
+
+    if (hostname.startsWith('serial.')) {
+      return `${protocol}//api.${hostname.replace(/^serial\./, '')}/api/v1`;
+    }
+
+    if (hostname.startsWith('www.')) {
+      return `${protocol}//api.${hostname.replace(/^www\./, '')}/api/v1`;
+    }
+
+    if (hostname.startsWith('api.')) {
+      return `${protocol}//${hostname}/api/v1`;
+    }
   }
 
   return '/api/v1';
