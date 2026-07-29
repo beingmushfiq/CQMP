@@ -60,14 +60,23 @@ export default defineConfig(({ mode }) => {
 
       rollupOptions: {
         output: {
-          // Split vendor code into a separate chunk — browsers cache vendor
+          // Split vendor code into separate chunks — browsers cache vendor
           // chunks independently, so a business logic update doesn't bust
           // the React/Zustand/Echo cache.
-          manualChunks: {
-            vendor: ['react', 'react-dom'],
-            state:  ['zustand'],
-            ws:     ['laravel-echo', 'pusher-js'],
-            icons:  ['lucide-react'],
+          // Function form required by Rollup's ManualChunksFunction type.
+          manualChunks(id: string) {
+            if (id.includes('/react') || id.includes('/react-dom') || id.includes('react/')) {
+              return 'vendor';
+            }
+            if (id.includes('zustand')) {
+              return 'state';
+            }
+            if (id.includes('laravel-echo') || id.includes('pusher-js')) {
+              return 'ws';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
           },
         },
       },
