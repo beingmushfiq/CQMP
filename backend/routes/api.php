@@ -14,14 +14,27 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     // ── Public: Authentication ─────────────────────────────────────────
-    Route::post('/login', [AuthController::class, 'login'])->name('api.login');
+    // Throttle: max 10 login attempts per minute per IP.
+    // Prevents brute-force credential stuffing attacks.
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1')
+        ->name('api.login');
 
     // ── Public: Visitor Booking (no auth) ─────────────────────────────
-    Route::get('/public/doctors', [QueueController::class, 'publicDoctors'])->name('public.doctors');
-    Route::post('/public/book',   [QueueController::class, 'publicBook'])->name('public.book');
+    // Doctor list: cache-friendly, allow 60/min (display only)
+    Route::get('/public/doctors', [QueueController::class, 'publicDoctors'])
+        ->middleware('throttle:60,1')
+        ->name('public.doctors');
+
+    // Public book: 20/min per IP — prevents automated queue flooding
+    // and patient record spam from bots.
+    Route::post('/public/book', [QueueController::class, 'publicBook'])
+        ->middleware('throttle:20,1')
+        ->name('public.book');
 
     // ── Protected: Require Sanctum token ──────────────────────────────
-    Route::middleware('auth:sanctum')->group(function () {
+    // Global throttle of 120 requests/minute for authenticated users.
+    Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
 
         // Auth
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');

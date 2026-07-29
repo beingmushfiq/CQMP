@@ -58,6 +58,16 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        // ── Production stack ──────────────────────────────────────
+        // Uses daily rotating logs at 'warning' level minimum.
+        // Set LOG_CHANNEL=production in your production .env.
+        // This avoids verbose debug output filling shared-host disk.
+        'production' => [
+            'driver' => 'stack',
+            'channels' => ['daily'],
+            'ignore_exceptions' => false,
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),

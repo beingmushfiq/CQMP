@@ -41,14 +41,14 @@ class AuthController extends Controller
 
     /**
      * POST /api/v1/logout
-     * Revoke the current token.
+     * Revoke only the current token — preserves other active sessions
+     * (e.g., receptionist logged in on multiple devices).
      */
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user();
-        if ($user) {
-            $user->tokens()->delete();
-        }
+        // Delete only the token used in this request.
+        // Avoids logging out the same user from all devices simultaneously.
+        $request->user()?->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out successfully.']);
     }

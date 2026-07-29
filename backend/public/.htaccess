@@ -5,21 +5,98 @@
 
     RewriteEngine On
 
-    # Handle Authorization Header
+    # ── Handle Authorization Header ───────────────────────────────────
+    # Some shared hosts strip the Authorization header. This rewrite
+    # passes it through as an environment variable that Laravel reads.
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Handle X-XSRF-Token Header
+    # ── Handle X-XSRF-Token Header ────────────────────────────────────
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # Redirect Trailing Slashes If Not A Folder...
+    # ── Force HTTPS ───────────────────────────────────────────────────
+    # Redirect all HTTP traffic to HTTPS.
+    # Only active when SSL is enabled (avoids redirect loops in dev).
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP_HOST} ^api\.ferozamedicinecorner\.com$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # ── Remove trailing slashes ───────────────────────────────────────
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    # ── Route to Laravel front controller ─────────────────────────────
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# ── Security Headers ─────────────────────────────────────────────────
+# Applied at Apache level as a belt-and-suspenders measure.
+# Laravel's SecurityHeaders middleware also sets these, but Apache
+# headers are set even before PHP runs (e.g., for 40x errors).
+<IfModule mod_headers.c>
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Block page from being framed (clickjacking protection)
+    Header always set X-Frame-Options "DENY"
+
+    # Legacy XSS filter
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Limit referrer information sent to third parties
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Disable unused browser APIs
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
+    # HSTS — 1 year; tells browsers to always use HTTPS for this domain
+    # Only uncomment after verifying SSL is permanently enabled.
+    # WARNING: Once set, you cannot easily go back to HTTP for 1 year.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # Remove server version from response headers (information disclosure)
+    Header always unset X-Powered-By
+    Header always unset Server
+</IfModule>
+
+# ── Block Access to Sensitive Files ──────────────────────────────────
+# Prevents direct access to .env, .git, composer files, etc.
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "(composer\.(json|lock)|package\.json|phpunit\.xml|\.gitignore|\.editorconfig)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ── Compression (gzip) ────────────────────────────────────────────────
+# Reduces JSON response sizes by 60-80%.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE application/xml
+</IfModule>
+
+# ── Browser Cache for Static Assets ──────────────────────────────────
+# API responses must never be cached by browsers (handled by Laravel headers).
+# Only static assets like fonts/images get cache headers.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css            "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/svg+xml       "access plus 1 year"
+    ExpiresByType image/png           "access plus 1 year"
+    ExpiresByType image/ico           "access plus 1 year"
+    ExpiresByType font/woff2          "access plus 1 year"
+    ExpiresByType font/woff           "access plus 1 year"
 </IfModule>

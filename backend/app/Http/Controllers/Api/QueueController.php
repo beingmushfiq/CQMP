@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Cache;
 
 class QueueController extends Controller
 {
@@ -241,10 +242,15 @@ class QueueController extends Controller
     /**
      * GET /api/v1/public/doctors
      * List of available doctors (public, no auth).
+     * Cached for 60 seconds — doctor list rarely changes mid-session
+     * and this endpoint is polled by every TV display + visitor page.
      */
     public function publicDoctors(): JsonResponse
     {
-        $doctors = Doctor::where('is_available', true)->get(['id', 'name', 'specialization']);
+        $doctors = Cache::remember('public.doctors', 60, fn() =>
+            Doctor::where('is_available', true)->get(['id', 'name', 'specialization'])
+        );
+
         return response()->json($doctors);
     }
 
@@ -256,7 +262,8 @@ class QueueController extends Controller
     {
         $data = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
-            'phone'     => ['nullable', 'string', 'max:20'],
+            // Digits, spaces, +, -, (, ) — covers international phone formats
+            'phone'     => ['nullable', 'string', 'max:11', 'regex:/^[\d\s\+\-\(\)]+$/'],
             'doctor_id' => ['required', 'exists:doctors,id'],
         ]);
 

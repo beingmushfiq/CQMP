@@ -253,12 +253,15 @@ class QueueEngine
     /**
      * Recalculate estimated wait times for all Waiting items in a queue day.
      * Formula: EWT = avg_consultation_time * position_in_queue + active_delay
+     *
+     * Performance: Uses a single batch UPDATE instead of one UPDATE per patient.
+     * For N waiting patients: was N+1 queries, now 2 queries (SELECT + 1 UPDATE).
      */
     public function recalculateWaitTimes(QueueDay $queueDay): void
     {
         $avgTime = $queueDay->doctor->average_consultation_time;
 
-        // Get active delay for this doctor
+        // Get active delay for this doctor (single query)
         $activeDelay = \App\Models\DoctorDelay::where('doctor_id', $queueDay->doctor_id)
             ->whereNull('end_time')
             ->value('delay_minutes') ?? 0;
@@ -267,21 +270,32 @@ class QueueEngine
             ->where('status', 'Waiting')
             ->orderBy('priority', 'desc')
             ->orderBy('serial_no')
-            ->get();
+            ->get(['id', 'serial_no', 'priority']);
+
+        if ($waitingItems->isEmpty()) {
+            return;
+        }
 
         $waitTimes = [];
-        $position = 1;
+        $cases     = [];
+        $ids       = [];
+        $position  = 1;
 
         foreach ($waitingItems as $item) {
-            $ewt = ($avgTime * $position) + $activeDelay;
-            $item->update(['estimated_wait' => $ewt]);
+            $ewt              = ($avgTime * $position) + $activeDelay;
             $waitTimes[$item->id] = $ewt;
+            $cases[]          = "WHEN id = {$item->id} THEN {$ewt}";
+            $ids[]            = $item->id;
             $position++;
         }
 
-        if (!empty($waitTimes)) {
-            broadcast(new EstimatedTimeUpdated($queueDay, $waitTimes))->toOthers();
-        }
+        // Single batch UPDATE using CASE WHEN — eliminates N individual queries
+        $caseStatement = implode(' ', $cases);
+        DB::statement(
+            "UPDATE queue_items SET estimated_wait = CASE {$caseStatement} END WHERE id IN (" . implode(',', $ids) . ')'
+        );
+
+        broadcast(new EstimatedTimeUpdated($queueDay, $waitTimes))->toOthers();
     }
 
     /**
