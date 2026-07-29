@@ -22,6 +22,12 @@
     RewriteCond %{HTTP_HOST} ^api\.ferozamedicinecorner\.com$ [NC]
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+    # ── Proxy WebSocket Connections to Reverb (port 8080) ──────────────
+    # Proxies wss://api.ferozamedicinecorner.com/app/* to local Reverb daemon.
+    # Requires Apache mod_proxy and mod_proxy_wstunnel modules enabled.
+    RewriteCond %{HTTP:Upgrade} =websocket [NC]
+    RewriteRule ^app/(.*) ws://127.0.0.1:8080/app/$1 [P,L]
+
     # ── Remove trailing slashes ───────────────────────────────────────
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

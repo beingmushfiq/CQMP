@@ -85,7 +85,14 @@ cd ~/api.ferozamedicinecorner.com
 
 ### 3a — Install PHP Dependencies
 ```bash
+# Standard command:
 composer install --no-dev --optimize-autoloader --no-interaction
+
+# If you get "-jailshell: composer: command not found", download composer.phar locally:
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php
+php -r "unlink('composer-setup.php');"
+php composer.phar install --no-dev --optimize-autoloader --no-interaction
 ```
 - `--no-dev` excludes testing packages (faker, pail, pint, phpunit)
 - `--optimize-autoloader` generates an optimized class map for faster autoloading
