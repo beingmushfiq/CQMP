@@ -13,9 +13,42 @@ import axios, { type AxiosError } from 'axios';
  * don't need try/catch for auth errors.
  */
 
+export const getApiBaseUrl = () => {
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location;
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8000/api/v1';
+    }
+
+    if (hostname.startsWith('serial.')) {
+      return `${protocol}//api.${hostname.replace(/^serial\./, '')}/api/v1`;
+    }
+
+    if (hostname.startsWith('www.')) {
+      return `${protocol}//api.${hostname.replace(/^www\./, '')}/api/v1`;
+    }
+
+    if (hostname.startsWith('api.')) {
+      return `${protocol}//${hostname}/api/v1`;
+    }
+  }
+
+  return '/api/v1';
+};
+
 const api = axios.create({
+<<<<<<< HEAD
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1',
   timeout: 15_000, // 15 seconds — prevents hanging requests
+=======
+  baseURL: getApiBaseUrl(),
+>>>>>>> a5d6782e8d855b466f5d697f5d32fe904a695e12
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -25,7 +58,27 @@ const api = axios.create({
   withCredentials: true,
 });
 
+<<<<<<< HEAD
 // ── Request Interceptor — attach Bearer token ──────────────────────
+=======
+export const createPublicApi = () => axios.create({
+  baseURL: getApiBaseUrl(),
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+export const getStorageBaseUrl = () => {
+  const apiBase = getApiBaseUrl();
+  if (apiBase === '/api/v1') {
+    return '';
+  }
+
+  return apiBase.replace(/\/api\/v1$/, '');
+};
+
+>>>>>>> a5d6782e8d855b466f5d697f5d32fe904a695e12
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('cqmp_token');
   if (token && config.headers) {

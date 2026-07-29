@@ -5,6 +5,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  avatar: string | null;
   roles: string[];
 }
 
@@ -15,6 +16,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
+  updateUser: (data: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -24,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     set({ loading: true });
+
     try {
       const response = await api.post('/login', { email, password });
       const { token, user } = response.data;
@@ -55,4 +58,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ token: null, user: null });
     }
   },
+
+  updateUser: (data) => set((state) => ({
+    user: state.user ? { ...state.user, ...data } : null,
+  })),
 }));

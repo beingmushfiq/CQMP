@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarCheck, Stethoscope, Phone, User, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import { ArrowLeft, CalendarCheck, Stethoscope, Phone, User, CheckCircle, Download } from 'lucide-react';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
+import { useLanguageStore } from '../store/useLanguageStore';
+import { createPublicApi } from '../utils/api';
 
 interface Doctor {
   id: number;
@@ -19,9 +20,10 @@ interface Props {
   onBack?: () => void;
 }
 
-const publicApi = axios.create({ baseURL: `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'}` });
+const publicApi = createPublicApi();
 
 export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
+  const { t } = useLanguageStore();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [doctorId, setDoctorId] = useState<number | null>(null);
   const [name, setName] = useState('');
@@ -54,7 +56,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
       if (doctorId && name && !loading) {
         publicApi.post('/public/book', { name, phone: phone || undefined, doctor_id: doctorId })
           .then((r) => setResult(r.data))
-          .catch((err) => setError(err.response?.data?.message || 'Booking failed.'));
+          .catch((err) => setError(err.response?.data?.message || t('visitor.error.booking')));
       }
     },
     'b': () => {
@@ -71,7 +73,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
 
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!doctorId) { setError('Please select a doctor.'); return; }
+    if (!doctorId) { setError(t('visitor.error.select.doctor')); return; }
     setError('');
     setLoading(true);
     try {
@@ -82,10 +84,97 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
       });
       setResult(r.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Booking failed. Please try again at the reception desk.');
+      setError(err.response?.data?.message || t('visitor.error.retry'));
     } finally {
       setLoading(false);
     }
+  };
+
+  const downloadTokenImage = () => {
+    if (!result) return;
+    
+    const selectedDoc = doctors.find(d => d.id === doctorId);
+    const doctorName = selectedDoc ? selectedDoc.name : 'Doctor';
+
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 700;
+    canvas.height = 500;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // --- Background ---
+    // White base
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 700, 500);
+    
+    // Subtle top gradient bar
+    const topGrad = ctx.createLinearGradient(0, 0, 700, 0);
+    topGrad.addColorStop(0, '#d1fae5'); // emerald-100
+    topGrad.addColorStop(1, '#a7f3d0'); // emerald-200
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, 700, 120);
+    
+    // Soft shadow effect
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.05)';
+    ctx.fillRect(40, 40, 620, 420);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(35, 35, 630, 430);
+    
+    // Main border
+    ctx.strokeStyle = '#e2e8f0'; // slate-200
+    ctx.lineWidth = 2;
+    ctx.strokeRect(35, 35, 630, 430);
+    
+    // Inner accent border
+    ctx.strokeStyle = '#10b981'; // emerald-500
+    ctx.lineWidth = 1;
+    ctx.strokeRect(45, 45, 610, 410);
+
+    // --- Header ---
+    ctx.fillStyle = '#065f46'; // emerald-800
+    ctx.font = 'bold 24px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t('visitor.canvas.title'), 350, 95);
+
+    // --- Serial Number ---
+    // Label
+    ctx.fillStyle = '#059669'; // emerald-600
+    ctx.font = '600 18px "Segoe UI", sans-serif';
+    ctx.fillText(t('visitor.canvas.serial'), 350, 190);
+    
+    // Number
+    ctx.fillStyle = '#10b981'; // emerald-500
+    ctx.font = '900 120px "Segoe UI", sans-serif';
+    ctx.fillText(`#${result.serial_no}`, 350, 300);
+
+    // --- Patient Info ---
+    ctx.fillStyle = '#0f172a'; // slate-900
+    ctx.font = 'bold 22px "Segoe UI", sans-serif';
+    ctx.fillText(result.patient.name, 350, 360);
+    
+    ctx.fillStyle = '#64748b'; // slate-500
+    ctx.font = '500 15px "Segoe UI", sans-serif';
+    ctx.fillText(`${t('visitor.canvas.phone')} ${result.patient.phone || 'N/A'}`, 350, 385);
+
+    // --- Doctor Info ---
+    ctx.fillStyle = '#334155'; // slate-700
+    ctx.font = '600 17px "Segoe UI", sans-serif';
+    ctx.fillText(`${t('visitor.canvas.doctor')} ${doctorName}`, 350, 430);
+
+    // --- Timestamp ---
+    const now = new Date();
+    const dateStr = now.toLocaleDateString();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    ctx.fillStyle = '#94a3b8'; // slate-400
+    ctx.font = 'normal 13px "Segoe UI", sans-serif';
+    ctx.fillText(`${t('visitor.canvas.booked.on')} ${dateStr} at ${timeStr}`, 350, 465);
+
+    // Convert to file download
+    const link = document.createElement('a');
+    link.download = `token_${result.serial_no}_${result.patient.name.toLowerCase().replace(/\s+/g, '_')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   };
 
   return (
@@ -99,7 +188,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
             onClick={onBack}
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Login [B]
+            <ArrowLeft className="w-4 h-4" /> {t('visitor.back')}
           </button>
         )}
 
@@ -108,8 +197,8 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/20 mb-4">
               <CalendarCheck className="w-7 h-7 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Book Appointment</h1>
-            <p className="text-slate-400 text-sm mt-1">Walk-in queue booking — today only</p>
+            <h1 className="text-2xl font-bold text-white">{t('visitor.title')}</h1>
+            <p className="text-slate-400 text-sm mt-1">{t('visitor.subtitle')}</p>
           </div>
 
           {result ? (
@@ -119,41 +208,54 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                 <CheckCircle className="w-10 h-10 text-emerald-400" />
               </div>
               <div>
-                <p className="text-slate-300 text-sm">Your serial number is</p>
+                <p className="text-slate-300 text-sm">{t('visitor.serial.your')}</p>
                 <p className="text-7xl font-black text-emerald-400 my-2">#{result.serial_no}</p>
-                <p className="text-slate-400 text-sm">Booked for <span className="text-white font-semibold">{result.patient.name}</span></p>
+                <p className="text-slate-400 text-sm">{t('visitor.serial.booked.for')} <span className="text-white font-semibold">{result.patient.name}</span></p>
               </div>
               <div className="bg-slate-800/60 rounded-xl p-4 text-sm text-slate-400 text-left space-y-1">
-                <p>• Please be present when your number is called.</p>
-                <p>• Check the display board for live updates.</p>
-                <p>• Inform the receptionist if you need to leave.</p>
+                <p>• {t('visitor.notice.present')}</p>
+                <p>• {t('visitor.notice.display')}</p>
+                <p>• {t('visitor.notice.receptionist')}</p>
               </div>
-              <button
-                onClick={() => { setResult(null); setName(''); setPhone(''); setDoctorId(null); }}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all cursor-pointer"
-              >
-                Book Another
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={downloadTokenImage}
+                  className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all active:scale-[0.98] cursor-pointer min-h-[48px]"
+                  aria-label="Download Token Image"
+                >
+                  <Download className="w-4 h-4" />
+                  Save Token
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setResult(null); setName(''); setPhone(''); setDoctorId(null); }}
+                  className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-all active:scale-[0.98] cursor-pointer min-h-[48px]"
+                >
+                  Book Another
+                </button>
+              </div>
             </div>
           ) : (
             /* ── Booking Form ── */
             <form onSubmit={handleBook} className="space-y-5">
               {error && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg text-sm">{error}</div>
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg text-sm" role="alert">{error}</div>
               )}
 
               {/* Doctor Select */}
               <div>
-                <label className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
-                  <Stethoscope className="w-4 h-4 text-emerald-400" /> Select Doctor <span className="text-xs text-slate-500 font-normal ml-auto">(Press [1], [2], etc.)</span>
+                <label htmlFor="doctor-select" className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
+                  <Stethoscope className="w-4 h-4 text-emerald-400" /> {t('visitor.select.doctor')} <span className="text-xs text-slate-500 font-normal ml-auto">{t('visitor.doctor.shortcut')}</span>
                 </label>
                 <select
+                  id="doctor-select"
                   required
                   value={doctorId ?? ''}
                   onChange={(e) => setDoctorId(Number(e.target.value))}
-                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none min-h-[52px]"
                 >
-                  <option value="" disabled>-- Choose a doctor --</option>
+                  <option value="" disabled>{t('visitor.choose.doctor')}</option>
                   {doctors.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name} — {d.specialization}
@@ -164,8 +266,8 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
 
               {/* Name */}
               <div>
-                <label className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
-                  <User className="w-4 h-4 text-emerald-400" /> Your Full Name <span className="text-xs text-slate-500 font-normal ml-auto">(Press <kbd className="bg-slate-800 px-1 rounded">N</kbd> to focus)</span>
+                <label htmlFor="visitor-name-input" className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
+                  <User className="w-4 h-4 text-emerald-400" /> {t('visitor.full.name')} <span className="text-xs text-slate-500 font-normal ml-auto">{t('visitor.name.shortcut')}</span>
                 </label>
                 <input
                   id="visitor-name-input"
@@ -174,16 +276,16 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Rahim Uddin"
-                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[52px]"
                 />
               </div>
 
               {/* Phone — optional */}
               <div>
-                <label className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
-                  <Phone className="w-4 h-4 text-emerald-400" /> Phone Number
-                  <span className="text-xs text-emerald-600 dark:text-emerald-500 font-normal ml-1">(Optional)</span>
-                  <span className="text-xs text-slate-500 font-normal ml-auto">(Press <kbd className="bg-slate-800 px-1 rounded">F</kbd> to focus)</span>
+                <label htmlFor="visitor-phone-input" className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
+                  <Phone className="w-4 h-4 text-emerald-400" /> {t('visitor.phone')}
+                  <span className="text-xs text-emerald-600 dark:text-emerald-500 font-normal ml-1">{t('visitor.phone.optional')}</span>
+                  <span className="text-xs text-slate-500 font-normal ml-auto">{t('visitor.phone.shortcut')}</span>
                 </label>
                 <input
                   id="visitor-phone-input"
@@ -191,21 +293,21 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="e.g. 01712345678 (leave blank if unknown)"
-                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[52px]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-4 px-4 rounded-xl shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98] cursor-pointer min-h-[56px]"
               >
                 {loading ? (
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
                     <CalendarCheck className="w-5 h-5" />
-                    Confirm Booking [S]
+                    {t('visitor.confirm.booking')}
                   </>
                 )}
               </button>

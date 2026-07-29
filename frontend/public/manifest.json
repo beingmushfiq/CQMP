@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "CQMP",
   "short_name": "CQMP",
   "description": "Clinic Queue Management Platform — manage patient queues with real-time updates",

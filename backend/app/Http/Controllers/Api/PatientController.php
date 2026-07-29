@@ -25,6 +25,12 @@ class PatientController extends Controller
             });
         }
 
+        $query->with(['queueItems' => function ($q) {
+            $q->where('status', '!=', 'Skipped')
+              ->latest()
+              ->limit(1);
+        }]);
+
         return PatientResource::collection($query->latest()->paginate(20));
     }
 

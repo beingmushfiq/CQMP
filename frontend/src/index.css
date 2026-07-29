@@ -1,3 +1,58 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply transition-colors duration-300 antialiased;
+  }
+
+  /* Accessible focus ring style for keyboard navigation */
+  *:focus-visible {
+    outline: 2px solid theme('colors.indigo.500');
+    outline-offset: 3px;
+  }
+
+  /* Tighter input/button focus styling */
+  input:focus, select:focus, textarea:focus {
+    @apply ring-2 ring-indigo-500/20 border-indigo-500 outline-none;
+  }
+
+  /* Custom Scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-100 dark:bg-slate-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full border-2 border-transparent;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-600;
+  }
+
+  ::selection {
+    @apply bg-indigo-500/30 text-indigo-900 dark:text-indigo-100;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/75 dark:bg-surface-card/75 backdrop-blur-md;
+  }
+
+  .glass-strong {
+    @apply bg-white/85 dark:bg-surface-card/85 backdrop-blur-lg;
+  }
+
+  .text-body {
+    @apply text-sm;
+  }
+
+  .text-label {
+    @apply text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400;
+  }
+}
+

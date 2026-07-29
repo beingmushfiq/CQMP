@@ -13,7 +13,7 @@ export interface QueueItem {
   serial_no: number;
   appointment_type: string;
   status: 'Waiting' | 'Called' | 'Completed' | 'Skipped';
-  priority: 'Normal' | 'Emergency';
+  priority: 'Normal' | 'Emergency' | 'Reserved';
   estimated_wait: number;
   called_at: string | null;
   patient: Patient;
@@ -32,10 +32,10 @@ interface QueueState {
   loading: boolean;
   activeDoctorId: number | null;
   setActiveDoctor: (id: number | null) => void;
-  fetchTodayQueue: (doctorId: number) => Promise<void>;
+  fetchTodayQueue: (doctorId: number, autoOpen?: boolean) => Promise<void>;
   openQueue: (doctorId: number) => Promise<void>;
   resetQueue: () => void;
-  registerWalkIn: (patientId: number, serialNo?: number) => Promise<void>;
+  registerWalkIn: (patientId: number, serialNo?: number, priority?: string) => Promise<void>;
   deleteItem: (itemId: number) => Promise<void>;
   callNext: () => Promise<void>;
   completeItem: (itemId: number) => Promise<void>;
@@ -58,7 +58,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   // Internal tracking (not part of state)
   setActiveDoctor: (id) => set({ activeDoctorId: id }),
 
-  fetchTodayQueue: async (doctorId) => {
+  fetchTodayQueue: async (doctorId, autoOpen = true) => {
     const prevDoctorId = get().activeDoctorId;
     const prevQueueDay = get().queueDay;
     if (prevDoctorId && prevDoctorId !== doctorId) {
@@ -72,6 +72,17 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     try {
       const response = await api.get(`/queue/today?doctor_id=${doctorId}`);
       const { queue_day, items } = response.data;
+
+      if (!queue_day && autoOpen) {
+        try {
+          await api.post('/queue/open', { doctor_id: doctorId });
+          await get().fetchTodayQueue(doctorId, false);
+          return;
+        } catch (e) {
+          // fallback if auto-open fails (e.g. backend error)
+        }
+      }
+
       set({
         queueDay: queue_day,
         items: (items && items.data) ? items.data : (items || []),
@@ -93,7 +104,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     set({ loading: true });
     try {
       await api.post('/queue/open', { doctor_id: doctorId });
-      await get().fetchTodayQueue(doctorId);
+      await get().fetchTodayQueue(doctorId, false);
     } catch (error) {
       set({ loading: false });
       throw error;
@@ -111,10 +122,10 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     set({ queueDay: null, items: [], loading: false, activeDoctorId: null });
   },
 
-  registerWalkIn: async (patientId, serialNo) => {
+  registerWalkIn: async (patientId, serialNo, priority = 'Normal') => {
     const { queueDay } = get();
     if (!queueDay) return;
-    const body: Record<string, unknown> = { queue_day_id: queueDay.id, patient_id: patientId };
+    const body: Record<string, unknown> = { queue_day_id: queueDay.id, patient_id: patientId, priority };
     if (serialNo !== undefined) body.serial_no = serialNo;
     await api.post('/queue/create', body);
   },
@@ -133,10 +144,22 @@ export const useQueueStore = create<QueueState>((set, get) => ({
 
   completeItem: async (itemId) => {
     await api.post('/queue/complete', { queue_item_id: itemId });
+    // Optimistically update local state so UI responds immediately
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === itemId ? { ...item, status: 'Completed' as const } : item
+      ),
+    }));
   },
 
   skipItem: async (itemId) => {
     await api.post('/queue/skip', { queue_item_id: itemId });
+    // Optimistically update local state so UI responds immediately
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === itemId ? { ...item, status: 'Skipped' as const } : item
+      ),
+    }));
   },
 
   reinsertItem: async (itemId, position) => {

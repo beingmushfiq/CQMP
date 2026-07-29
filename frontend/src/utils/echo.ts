@@ -15,6 +15,7 @@ window.Pusher = Pusher;
 // In production this would fill the browser console with noise.
 Pusher.logToConsole = import.meta.env.DEV;
 
+<<<<<<< HEAD
 /**
  * Production-ready Laravel Echo instance.
  *
@@ -55,3 +56,41 @@ export const echo = new Echo({
   // Do not report statistics to Pusher/Reverb analytics endpoint
   disableStats: true,
 });
+=======
+const broadcastDriver = (import.meta.env.VITE_BROADCAST_DRIVER ?? 'reverb').trim().toLowerCase();
+const hasPusherConfig = Boolean(import.meta.env.VITE_PUSHER_APP_KEY?.trim());
+
+let echoInstance: any;
+
+if (broadcastDriver === 'pusher' || (hasPusherConfig && broadcastDriver !== 'reverb')) {
+  const pusherScheme = (import.meta.env.VITE_PUSHER_SCHEME ?? 'https').trim().toLowerCase();
+  const pusherCluster = (import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1').trim();
+
+  echoInstance = new Echo({
+    broadcaster: 'pusher',
+    key: import.meta.env.VITE_PUSHER_APP_KEY ?? 'replace-with-pusher-key',
+    cluster: pusherCluster,
+    forceTLS: pusherScheme === 'https',
+    encrypted: pusherScheme === 'https',
+    disableStats: true,
+  });
+} else {
+  const reverbScheme = (import.meta.env.VITE_REVERB_SCHEME ?? 'http').trim().toLowerCase();
+  const reverbPort = parseInt(import.meta.env.VITE_REVERB_PORT ?? (reverbScheme === 'https' ? '443' : '8080'), 10);
+  const isSecure = reverbScheme === 'https';
+
+  echoInstance = new Echo({
+    broadcaster: 'reverb',
+    key: import.meta.env.VITE_REVERB_APP_KEY ?? 'cqmp-reverb-key',
+    wsHost: import.meta.env.VITE_REVERB_HOST ?? '127.0.0.1',
+    wsPort: reverbPort,
+    wssPort: reverbPort,
+    forceTLS: isSecure,
+    encrypted: isSecure,
+    enabledTransports: ['ws', 'wss'],
+    disableStats: true,
+  });
+}
+
+export const echo = echoInstance;
+>>>>>>> a5d6782e8d855b466f5d697f5d32fe904a695e12
