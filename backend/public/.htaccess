@@ -23,10 +23,9 @@
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # ── Proxy WebSocket Connections to Reverb (port 8080) ──────────────
-    # Proxies wss://api.ferozamedicinecorner.com/app/* to local Reverb daemon.
-    # Requires Apache mod_proxy and mod_proxy_wstunnel modules enabled.
     RewriteCond %{HTTP:Upgrade} =websocket [NC]
     RewriteRule ^app/(.*) ws://127.0.0.1:8080/app/$1 [P,L]
+
 
     # ── Remove trailing slashes ───────────────────────────────────────
     RewriteCond %{REQUEST_FILENAME} !-d
@@ -44,6 +43,12 @@
 # Laravel's SecurityHeaders middleware also sets these, but Apache
 # headers are set even before PHP runs (e.g., for 40x errors).
 <IfModule mod_headers.c>
+    # ── Allow CORS from Frontend Origin ───────────────────────────
+    Header always set Access-Control-Allow-Origin "https://serial.ferozamedicinecorner.com"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN"
+    Header always set Access-Control-Allow-Credentials "true"
+
     # Prevent MIME type sniffing
     Header always set X-Content-Type-Options "nosniff"
 

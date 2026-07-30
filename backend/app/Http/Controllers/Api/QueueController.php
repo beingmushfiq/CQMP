@@ -289,12 +289,20 @@ class QueueController extends Controller
         $queueDay = QueueDay::where('doctor_id', $data['doctor_id'])
             ->where('date', '>=', Carbon::today()->startOfDay())
             ->where('date', '<=', Carbon::today()->endOfDay())
-            ->where('status', 'opened')
             ->latest()->first();
 
         if (! $queueDay) {
+            $doctor = Doctor::findOrFail($data['doctor_id']);
+            $queueDay = QueueDay::create([
+                'doctor_id' => $doctor->id,
+                'clinic_id' => $doctor->clinic_id,
+                'date'      => Carbon::today()->toDateString(),
+                'status'    => 'opened',
+                'opened_at' => Carbon::now(),
+            ]);
+        } elseif ($queueDay->status === 'closed') {
             return response()->json([
-                'message' => 'No open queue for this doctor today. Please visit the reception desk.',
+                'message' => 'The queue for this doctor is closed for today.',
             ], 422);
         }
 

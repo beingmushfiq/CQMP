@@ -42,6 +42,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // auth. Safe to have registered even in token-only mode.
         $middleware->statefulApi();
 
+        // ── Exclude API routes from CSRF Verification ──────────────
+        // Stateless API endpoints using Bearer tokens (or public API routes)
+        // do not require CSRF token validation.
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
@@ -57,7 +64,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // ── Sanitize production error responses ──────────────────
         // In production, never expose the real exception message;
         // return a generic 500 with a request ID for log tracing.
-        $exceptions->respond(function (Response $response, \Throwable $e, Request $request) {
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $e, Request $request) {
             if (app()->isProduction() && $response->getStatusCode() >= 500 && $request->is('api/*')) {
                 return response()->json([
                     'message' => 'An unexpected error occurred. Please try again.',
