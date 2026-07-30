@@ -49,6 +49,8 @@ interface QueueState {
   unsubscribeFromDoctor: (doctorId: number) => void;
 }
 
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
 export const useQueueStore = create<QueueState>((set, get) => ({
   queueDay: null,
   items: [],
@@ -95,6 +97,23 @@ export const useQueueStore = create<QueueState>((set, get) => ({
       if (queue_day) {
         get().subscribeToQueue(queue_day.id);
       }
+
+      // Quiet background polling fallback (every 10s) in case WebSockets drop
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        if (get().activeDoctorId === doctorId) {
+          try {
+            const res = await api.get(`/queue/today?doctor_id=${doctorId}`);
+            const { queue_day: pd, items: pi } = res.data;
+            set({
+              queueDay: pd,
+              items: (pi && pi.data) ? pi.data : (pi || []),
+            });
+          } catch {
+            /* ignore background errors */
+          }
+        }
+      }, 10000);
     } catch (error) {
       set({ loading: false });
     }
@@ -113,6 +132,10 @@ export const useQueueStore = create<QueueState>((set, get) => ({
 
   resetQueue: () => {
     const { activeDoctorId, queueDay } = get();
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
     if (activeDoctorId) {
       get().unsubscribeFromDoctor(activeDoctorId);
     }
@@ -193,44 +216,59 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     const channelName = `queue.${queueDayId}`;
     // Leave existing to avoid duplicate listeners
     echo.leave(channelName);
-    echo.channel(channelName)
-      .listen('QueueCreated', (e: { queue_item: QueueItem }) => {
-        set((state) => ({ items: [...state.items, e.queue_item] }));
-      })
-      .listen('QueueUpdated', (e: { queue_item: QueueItem }) => {
-        set((state) => ({
-          items: state.items.map((item) => (item.id === e.queue_item.id ? { ...item, ...e.queue_item } : item)),
-        }));
-      })
-      .listen('QueueCompleted', (e: { queue_item_id: number }) => {
-        set((state) => ({
-          items: state.items.map((item) => (item.id === e.queue_item_id ? { ...item, status: 'Completed' } : item)),
-        }));
-      })
-      .listen('QueueFrozen', () => {
-        set((state) => state.queueDay ? { queueDay: { ...state.queueDay, status: 'paused' } } : {});
-      })
-      .listen('QueueResumed', () => {
-        set((state) => state.queueDay ? { queueDay: { ...state.queueDay, status: 'opened' } } : {});
-      })
-      .listen('EmergencyInserted', (e: { queue_item: QueueItem }) => {
-        set((state) => ({
-          items: [
-            e.queue_item,
-            ...state.items.map((item) => (item.status === 'Waiting' ? { ...item, serial_no: item.serial_no + 1 } : item)),
-          ],
-        }));
-      })
-      .listen('EstimatedTimeUpdated', (e: { wait_times: Record<number, number> }) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            e.wait_times[item.id] !== undefined ? { ...item, estimated_wait: e.wait_times[item.id] } : item
-          ),
-        }));
-      })
-      .listen('QueueDeleted', (e: { queue_item_id: number }) => {
-        set((state) => ({ items: state.items.filter((item) => item.id !== e.queue_item_id) }));
-      });
+    const channel = echo.channel(channelName);
+
+    const onCreated = (e: { queue_item: QueueItem }) => {
+      set((state) => ({
+        items: state.items.some((i) => i.id === e.queue_item.id)
+          ? state.items.map((i) => (i.id === e.queue_item.id ? { ...i, ...e.queue_item } : i))
+          : [...state.items, e.queue_item],
+      }));
+    };
+    const onUpdated = (e: { queue_item: QueueItem }) => {
+      set((state) => ({
+        items: state.items.map((item) => (item.id === e.queue_item.id ? { ...item, ...e.queue_item } : item)),
+      }));
+    };
+    const onCompleted = (e: { queue_item_id: number }) => {
+      set((state) => ({
+        items: state.items.map((item) => (item.id === e.queue_item_id ? { ...item, status: 'Completed' } : item)),
+      }));
+    };
+    const onFrozen = () => {
+      set((state) => state.queueDay ? { queueDay: { ...state.queueDay, status: 'paused' } } : {});
+    };
+    const onResumed = () => {
+      set((state) => state.queueDay ? { queueDay: { ...state.queueDay, status: 'opened' } } : {});
+    };
+    const onEmergency = (e: { queue_item: QueueItem }) => {
+      set((state) => ({
+        items: [
+          e.queue_item,
+          ...state.items.map((item) => (item.status === 'Waiting' ? { ...item, serial_no: item.serial_no + 1 } : item)),
+        ],
+      }));
+    };
+    const onTimeUpdated = (e: { wait_times: Record<number, number> }) => {
+      set((state) => ({
+        items: state.items.map((item) =>
+          e.wait_times[item.id] !== undefined ? { ...item, estimated_wait: e.wait_times[item.id] } : item
+        ),
+      }));
+    };
+    const onDeleted = (e: { queue_item_id: number }) => {
+      set((state) => ({ items: state.items.filter((item) => item.id !== e.queue_item_id) }));
+    };
+
+    channel
+      .listen('QueueCreated', onCreated).listen('.QueueCreated', onCreated)
+      .listen('QueueUpdated', onUpdated).listen('.QueueUpdated', onUpdated)
+      .listen('QueueCompleted', onCompleted).listen('.QueueCompleted', onCompleted)
+      .listen('QueueFrozen', onFrozen).listen('.QueueFrozen', onFrozen)
+      .listen('QueueResumed', onResumed).listen('.QueueResumed', onResumed)
+      .listen('EmergencyInserted', onEmergency).listen('.EmergencyInserted', onEmergency)
+      .listen('EstimatedTimeUpdated', onTimeUpdated).listen('.EstimatedTimeUpdated', onTimeUpdated)
+      .listen('QueueDeleted', onDeleted).listen('.QueueDeleted', onDeleted);
   },
 
   unsubscribeFromQueue: (queueDayId) => {
@@ -241,12 +279,14 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     const channelName = `doctor-queue.${doctorId}`;
     // Leave first to prevent stacking listeners on re-subscriptions
     echo.leave(channelName);
+    const onOpened = (e: { queue_day: QueueDay }) => {
+      set({ queueDay: e.queue_day });
+      // Subscribe to the new queue day channel
+      get().subscribeToQueue(e.queue_day.id);
+    };
     echo.channel(channelName)
-      .listen('QueueOpened', (e: { queue_day: QueueDay }) => {
-        set({ queueDay: e.queue_day });
-        // Subscribe to the new queue day channel
-        get().subscribeToQueue(e.queue_day.id);
-      });
+      .listen('QueueOpened', onOpened)
+      .listen('.QueueOpened', onOpened);
   },
 
   unsubscribeFromDoctor: (doctorId) => {

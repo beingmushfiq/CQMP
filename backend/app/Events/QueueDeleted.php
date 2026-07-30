@@ -5,13 +5,18 @@ namespace App\Events;
 use App\Models\QueueItem;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class QueueDeleted implements ShouldBroadcast
+class QueueDeleted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public function broadcastAs(): string
+    {
+        return 'QueueDeleted';
+    }
 
     public function __construct(
         public readonly int $queueItemId,

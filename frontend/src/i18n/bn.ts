@@ -150,6 +150,7 @@ const bn: Record<string, string> = {
   'doctor.serial': 'সিরিয়াল:',
   'doctor.phone': 'ফোন:',
   'doctor.complete.visit': 'ভিজিট সম্পন্ন [C]',
+  'doctor.skip': 'স্কিপ করুন [S]',
   'doctor.no.patient.chamber': 'বর্তমানে চেম্বারে কোনো রোগী নেই।',
   'doctor.call.next': 'পরবর্তী রোগীকে ডাকুন [N]',
   'doctor.waiting.queue': 'অপেক্ষমান কিউ',

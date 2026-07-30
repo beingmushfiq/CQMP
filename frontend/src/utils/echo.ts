@@ -58,11 +58,15 @@ if (broadcastDriver === 'pusher' || (hasPusherConfig && broadcastDriver !== 'rev
 } else {
   // ── Reverb self-hosted driver (default) ───────────────────────────
   const reverbScheme = (import.meta.env.VITE_REVERB_SCHEME ?? 'http').trim().toLowerCase();
+  const isSecure = reverbScheme === 'https' || window.location.protocol === 'https:';
   const reverbPort = parseInt(
-    import.meta.env.VITE_REVERB_PORT ?? (reverbScheme === 'https' ? '443' : '8080'),
+    import.meta.env.VITE_REVERB_PORT ?? (isSecure ? '443' : '8080'),
     10
   );
-  const isSecure = reverbScheme === 'https';
+  const defaultHost = window.location.hostname.includes('ferozamedicinecorner.com')
+    ? 'api.ferozamedicinecorner.com'
+    : window.location.hostname || '127.0.0.1';
+  const reverbHost = import.meta.env.VITE_REVERB_HOST || defaultHost;
 
   echoInstance = new Echo({
     broadcaster: 'reverb',
@@ -71,7 +75,7 @@ if (broadcastDriver === 'pusher' || (hasPusherConfig && broadcastDriver !== 'rev
     key: import.meta.env.VITE_REVERB_APP_KEY ?? 'cqmp-reverb-key',
 
     // WebSocket host — api.ferozamedicinecorner.com in production
-    wsHost: import.meta.env.VITE_REVERB_HOST ?? '127.0.0.1',
+    wsHost: reverbHost,
 
     // Same port for ws:// and wss:// — 443 in production (Apache proxy)
     wsPort: reverbPort,

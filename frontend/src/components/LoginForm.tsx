@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
-import { LogIn, CalendarCheck, Stethoscope, Phone, User, CheckCircle, X, Sun, Moon, Download } from 'lucide-react';
+import { LogIn, CalendarCheck, Stethoscope, Phone, User, CheckCircle, X, Sun, Moon, Download, Eye, EyeOff } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { createPublicApi } from '../utils/api';
@@ -25,6 +25,7 @@ export const LoginForm: React.FC = () => {
   const [showLogin, setShowLogin] = useState(() => window.location.pathname === '/login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuthStore();
@@ -42,9 +43,10 @@ export const LoginForm: React.FC = () => {
 
   useEffect(() => {
     publicApi.get('/public/doctors').then((r) => {
-      setDoctors(r.data);
-      if (r.data.length === 1) setDoctorId(r.data[0].id);
-    }).catch(() => {});
+      const data = Array.isArray(r.data) ? r.data : [];
+      setDoctors(data);
+      if (data.length === 1) setDoctorId(data[0].id);
+    }).catch(() => setDoctors([]));
   }, []);
 
   useKeyboardShortcut({
@@ -172,6 +174,20 @@ export const LoginForm: React.FC = () => {
         >
           {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
+        <a
+          href="/tv"
+          onClick={(e) => {
+            if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+              e.preventDefault();
+              window.history.pushState({}, '', '/tv');
+              window.dispatchEvent(new Event('popstate'));
+            }
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/30 border border-emerald-500/30 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 transition-all cursor-pointer text-xs font-semibold"
+          title="View Live Queue TV Display"
+        >
+          <Eye className="w-3.5 h-3.5" /> View Live Queue
+        </a>
         <button
           onClick={() => setShowLogin(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all cursor-pointer text-[10px] font-semibold"
@@ -349,15 +365,26 @@ export const LoginForm: React.FC = () => {
 
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5" htmlFor="modal-password">{t('login.password')}</label>
-                <input
-                  id="modal-password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    id="modal-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-10 py-2.5 text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <button

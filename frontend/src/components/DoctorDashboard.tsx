@@ -244,7 +244,7 @@ export const DoctorDashboard: React.FC = () => {
                           onClick={() => skipItem(activeItem.id)}
                           className="flex-1 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 active:scale-[0.98] cursor-pointer text-sm transition-all min-h-[48px]"
                         >
-                          {t('doctor.skip')} [S]
+                          {t('doctor.skip')}
                         </button>
                       </div>
                     </motion.div>

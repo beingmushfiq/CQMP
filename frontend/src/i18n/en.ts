@@ -150,6 +150,7 @@ const en = {
   'doctor.serial': 'Serial:',
   'doctor.phone': 'Phone:',
   'doctor.complete.visit': 'Complete Visit [C]',
+  'doctor.skip': 'Skip Patient [S]',
   'doctor.no.patient.chamber': 'No patient is currently inside the chamber.',
   'doctor.call.next': 'Call Next Patient [N]',
   'doctor.waiting.queue': 'Waiting Queue',

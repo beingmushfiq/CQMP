@@ -15,15 +15,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   fetchSettings: async () => {
     try {
-      const res = await api.get('/settings');
+      // Fetch public settings directly first to avoid 401 errors for visitors/unauthenticated pages
+      const res = await api.get('/settings/public');
       set({ settings: res.data, loaded: true });
     } catch {
-      try {
-        const res = await api.get('/settings/public');
-        set({ settings: res.data, loaded: true });
-      } catch {
-        set({ loaded: true });
-      }
+      set({ loaded: true });
     }
   },
 

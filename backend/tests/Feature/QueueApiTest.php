@@ -206,4 +206,55 @@ class QueueApiTest extends TestCase
         $this->assertEquals(1, \App\Models\QueueItem::find($item2['id'])->serial_no);
         $this->assertEquals(2, \App\Models\QueueItem::find($item1['id'])->serial_no);
     }
+
+    public function test_can_complete_queue_item(): void
+    {
+        $clinic   = Clinic::factory()->create();
+        $doctor   = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+        $queueDay = QueueDay::factory()->create([
+            'clinic_id' => $clinic->id,
+            'doctor_id' => $doctor->id,
+            'date'      => Carbon::today()->toDateString(),
+            'status'    => 'opened',
+        ]);
+        $patient = Patient::factory()->create();
+
+        $item = $this->actingAs($this->admin, 'sanctum')
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id])
+                     ->json('data');
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+                         ->postJson('/api/v1/queue/complete', [
+                             'queue_item_id' => $item['id'],
+                         ]);
+
+        $response->assertOk();
+        $this->assertEquals('Completed', \App\Models\QueueItem::find($item['id'])->status);
+    }
+
+    public function test_can_skip_queue_item(): void
+    {
+        $clinic   = Clinic::factory()->create();
+        $doctor   = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+        $queueDay = QueueDay::factory()->create([
+            'clinic_id' => $clinic->id,
+            'doctor_id' => $doctor->id,
+            'date'      => Carbon::today()->toDateString(),
+            'status'    => 'opened',
+        ]);
+        $patient = Patient::factory()->create();
+
+        $item = $this->actingAs($this->admin, 'sanctum')
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id])
+                     ->json('data');
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+                         ->postJson('/api/v1/queue/skip', [
+                             'queue_item_id' => $item['id'],
+                         ]);
+
+        $response->assertOk();
+        $this->assertEquals('Skipped', \App\Models\QueueItem::find($item['id'])->status);
+    }
 }
+

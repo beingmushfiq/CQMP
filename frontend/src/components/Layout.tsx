@@ -1,13 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import api, { getStorageBaseUrl } from '../utils/api';
+import { errorLogger } from '../utils/errorLogger';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { UserProfile } from './UserProfile';
+import { ErrorLogModal } from './ErrorLogModal';
 import {
-  Sun, Moon, LogOut, Search,
+  Sun, Moon, LogOut, Search, Bug,
   LayoutDashboard, Stethoscope, Monitor, Settings,
   ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
@@ -55,6 +57,14 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showErrorInspector, setShowErrorInspector] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
+
+  useEffect(() => {
+    setErrorCount(errorLogger.getErrors().length);
+    const unsubscribe = errorLogger.subscribe((logs) => setErrorCount(logs.length));
+    return () => unsubscribe();
+  }, []);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -167,6 +177,20 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
               <Search className="w-4 h-4" />
             </button>
 
+            {/* Error Log Inspector Header Button */}
+            <button
+              onClick={() => setShowErrorInspector(true)}
+              className="relative p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-700 hover:border-rose-500/30 cursor-pointer transition-all"
+              title="System Error Log Inspector"
+            >
+              <Bug className="w-4 h-4" />
+              {errorCount > 0 && (
+                <span className="absolute -top-1 -right-1 px-1.5 py-0.2 text-[9px] font-bold bg-rose-500 text-white rounded-full border-2 border-white dark:border-slate-900 animate-pulse">
+                  {errorCount > 9 ? '9+' : errorCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all"
@@ -210,6 +234,12 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
           {children}
         </main>
       </div>
+
+      {/* Error Log Modal */}
+      <ErrorLogModal
+        isOpen={showErrorInspector}
+        onClose={() => setShowErrorInspector(false)}
+      />
 
       {/* ── Mobile Bottom Navbar ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-surface-card/90 backdrop-blur-lg border-t border-slate-200/80 dark:border-slate-700/80 px-2 py-2 safe-area-pb">

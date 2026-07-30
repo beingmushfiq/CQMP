@@ -16,27 +16,28 @@ class AuditService
         ?int $targetPatientId = null,
         ?string $details = null,
         ?Request $request = null
-    ): AuditLog {
-        // Narrow Auth::user() from Authenticatable|null → User to access
-        // the Spatie HasRoles trait method getRoleNames().
-        // Auth::user() is typed as Authenticatable|null which doesn't
-        // declare getRoleNames() — instanceof narrows it for the analyser.
-        $authUser = Auth::user();
-        $resolvedUserType = $userType ?? (
-            $authUser instanceof User
-                ? ($authUser->getRoleNames()->first() ?? 'System')
-                : 'System'
-        );
+    ): ?AuditLog {
+        try {
+            $authUser = Auth::user();
+            $resolvedUserType = $userType ?? (
+                $authUser instanceof User
+                    ? (rescue(fn() => $authUser->getRoleNames()->first(), report: false) ?? 'System')
+                    : 'System'
+            );
 
-        return AuditLog::create([
-            'user_id'           => $userId ?? Auth::id(),
-            'user_type'         => $resolvedUserType,
-            'action'            => $action,
-            'target_patient_id' => $targetPatientId,
-            'details'           => $details,
-            'ip_address'        => $request?->ip(),
-            'user_agent'        => $request?->userAgent(),
-            'timestamp'         => now(),
-        ]);
+            return AuditLog::create([
+                'user_id'           => $userId ?? Auth::id(),
+                'user_type'         => $resolvedUserType,
+                'action'            => $action,
+                'target_patient_id' => $targetPatientId,
+                'details'           => $details,
+                'ip_address'        => $request?->ip(),
+                'user_agent'        => $request?->userAgent(),
+                'timestamp'         => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("AuditLog creation failed: {$e->getMessage()}");
+            return null;
+        }
     }
 }

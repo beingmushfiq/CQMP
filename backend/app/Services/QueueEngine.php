@@ -43,7 +43,7 @@ class QueueEngine
             ]);
         }
 
-        broadcast(new QueueOpened($queueDay))->toOthers();
+        rescue(fn() => broadcast(new QueueOpened($queueDay)), report: false);
 
         return $queueDay;
     }
@@ -89,7 +89,7 @@ class QueueEngine
             ]);
 
             $item->load(['patient', 'queueDay']);
-            broadcast(new QueueCreated($item))->toOthers();
+            rescue(fn() => broadcast(new QueueCreated($item)), report: false);
 
             return $item;
         });
@@ -121,7 +121,7 @@ class QueueEngine
             ]);
 
             $nextItem->load(['patient', 'queueDay']);
-            broadcast(new QueueUpdated($nextItem))->toOthers();
+            rescue(fn() => broadcast(new QueueUpdated($nextItem)), report: false);
 
             return $nextItem;
         });
@@ -139,7 +139,7 @@ class QueueEngine
             ]);
 
             $item->load(['patient', 'queueDay']);
-            broadcast(new QueueCompleted($item))->toOthers();
+            rescue(fn() => broadcast(new QueueCompleted($item)), report: false);
             $this->recalculateWaitTimes($item->queueDay);
 
             return $item;
@@ -154,7 +154,7 @@ class QueueEngine
         return DB::transaction(function () use ($item) {
             $item->update(['status' => 'Skipped']);
             $item->load(['patient', 'queueDay']);
-            broadcast(new QueueUpdated($item))->toOthers();
+            rescue(fn() => broadcast(new QueueUpdated($item)), report: false);
             $this->recalculateWaitTimes($item->queueDay);
 
             return $item;
@@ -186,7 +186,7 @@ class QueueEngine
                 ->get();
 
             foreach ($allItems as $it) {
-                broadcast(new QueueUpdated($it));
+                rescue(fn() => broadcast(new QueueUpdated($it)), report: false);
             }
 
             $item->load(['patient', 'queueDay']);
@@ -223,7 +223,7 @@ class QueueEngine
             ]);
 
             $item->load(['patient', 'queueDay']);
-            broadcast(new EmergencyInserted($item))->toOthers();
+            rescue(fn() => broadcast(new EmergencyInserted($item)), report: false);
             $this->recalculateWaitTimes($queueDay);
 
             return $item;
@@ -236,7 +236,7 @@ class QueueEngine
     public function freeze(QueueDay $queueDay): QueueDay
     {
         $queueDay->update(['status' => 'paused']);
-        broadcast(new QueueFrozen($queueDay))->toOthers();
+        rescue(fn() => broadcast(new QueueFrozen($queueDay)), report: false);
         return $queueDay;
     }
 
@@ -246,7 +246,7 @@ class QueueEngine
     public function resume(QueueDay $queueDay): QueueDay
     {
         $queueDay->update(['status' => 'opened']);
-        broadcast(new QueueResumed($queueDay))->toOthers();
+        rescue(fn() => broadcast(new QueueResumed($queueDay)), report: false);
         return $queueDay;
     }
 
@@ -257,9 +257,13 @@ class QueueEngine
      * Performance: Uses a single batch UPDATE instead of one UPDATE per patient.
      * For N waiting patients: was N+1 queries, now 2 queries (SELECT + 1 UPDATE).
      */
-    public function recalculateWaitTimes(QueueDay $queueDay): void
+    public function recalculateWaitTimes(?QueueDay $queueDay): void
     {
-        $avgTime = $queueDay->doctor->average_consultation_time;
+        if (! $queueDay) {
+            return;
+        }
+
+        $avgTime = $queueDay->doctor?->average_consultation_time ?? 15;
 
         // Get active delay for this doctor (single query)
         $activeDelay = \App\Models\DoctorDelay::where('doctor_id', $queueDay->doctor_id)
@@ -282,20 +286,21 @@ class QueueEngine
         $position  = 1;
 
         foreach ($waitingItems as $item) {
-            $ewt              = ($avgTime * $position) + $activeDelay;
+            $ewt                  = ($avgTime * $position) + $activeDelay;
             $waitTimes[$item->id] = $ewt;
-            $cases[]          = "WHEN id = {$item->id} THEN {$ewt}";
-            $ids[]            = $item->id;
+            $cases[]              = "WHEN id = {$item->id} THEN {$ewt}";
+            $ids[]                = (int) $item->id;
             $position++;
         }
 
         // Single batch UPDATE using CASE WHEN — eliminates N individual queries
         $caseStatement = implode(' ', $cases);
+        $idList        = implode(',', $ids);
         DB::statement(
-            "UPDATE queue_items SET estimated_wait = CASE {$caseStatement} END WHERE id IN (" . implode(',', $ids) . ')'
+            "UPDATE queue_items SET estimated_wait = CASE {$caseStatement} ELSE 0 END WHERE id IN ({$idList})"
         );
 
-        broadcast(new EstimatedTimeUpdated($queueDay, $waitTimes))->toOthers();
+        rescue(fn() => broadcast(new EstimatedTimeUpdated($queueDay, $waitTimes)), report: false);
     }
 
     /**
@@ -315,7 +320,7 @@ class QueueEngine
                 $this->recalculateWaitTimes($queueDay);
             }
 
-            broadcast(new QueueDeleted($itemId, $queueDayId, $doctorId))->toOthers();
+            rescue(fn() => broadcast(new QueueDeleted($itemId, $queueDayId, $doctorId)), report: false);
         });
     }
 }

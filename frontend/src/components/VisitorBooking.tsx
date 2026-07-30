@@ -68,7 +68,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
   });
 
   useEffect(() => {
-    publicApi.get('/public/doctors').then((r) => setDoctors(r.data)).catch(() => {});
+    publicApi.get('/public/doctors').then((r) => setDoctors(Array.isArray(r.data) ? r.data : [])).catch(() => setDoctors([]));
   }, []);
 
   const handleBook = async (e: React.FormEvent) => {

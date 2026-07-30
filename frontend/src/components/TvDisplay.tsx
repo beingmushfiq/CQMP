@@ -17,7 +17,7 @@ interface TvDisplayProps {
 }
 
 export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
-  const { queueDay, items, fetchTodayQueue } = useQueueStore();
+  const { queueDay, items, fetchTodayQueue, subscribeToQueue } = useQueueStore();
   const { theme, toggleTheme } = useThemeStore();
   const { logout, user } = useAuthStore();
   const { get: getSetting } = useSettingsStore();
@@ -51,14 +51,26 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   }, []);
 
   useEffect(() => {
-    api.get('/me').then(() => {
+    api.get('/public/doctors').then((res) => {
+      const docs = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      if (docs.length > 0) {
+        setDoctors(docs);
+      } else {
+        const docList = [{ id: 1, name: getSetting('doctor_name', 'Dr. Sarah Rahman'), specialization: getSetting('doctor_specialization', 'Cardiologist') }];
+        setDoctors(docList);
+      }
+    }).catch(() => {
       const docList = [{ id: 1, name: getSetting('doctor_name', 'Dr. Sarah Rahman'), specialization: getSetting('doctor_specialization', 'Cardiologist') }];
       setDoctors(docList);
     });
   }, []);
 
+  const lastAnnouncedSerialRef = React.useRef<number | null>(null);
+
   useEffect(() => {
-    if (viewMode !== 'lobby') return;
+    if (viewMode !== 'lobby' || doctors.length === 0) return;
+
+    const activeChannels: string[] = [];
 
     const fetchAllQueues = async () => {
       const queues: typeof lobbyQueues = {};
@@ -73,21 +85,39 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
           const qDayId = res.data.queue_day?.id;
           if (qDayId) {
-            echo.channel(`queue.${qDayId}`)
-              .listen('QueueUpdated', (e: { queue_item: QueueItem }) => {
-                if (e.queue_item.status === 'Called') speakAnnouncement(e.queue_item.serial_no);
-                refreshLobbyData();
-              })
-              .listen('QueueCreated', () => refreshLobbyData())
-              .listen('QueueCompleted', () => refreshLobbyData());
+            const channelName = `queue.${qDayId}`;
+            if (!activeChannels.includes(channelName)) {
+              activeChannels.push(channelName);
+            }
+            const ch = echo.channel(channelName);
+            const handleUpdated = (e: { queue_item: QueueItem }) => {
+              if (e?.queue_item?.status === 'Called') speakAnnouncement(e.queue_item.serial_no);
+              refreshLobbyData();
+            };
+            const handleGeneral = () => refreshLobbyData();
+
+            ch.listen('QueueUpdated', handleUpdated).listen('.QueueUpdated', handleUpdated)
+              .listen('QueueCreated', handleGeneral).listen('.QueueCreated', handleGeneral)
+              .listen('QueueCompleted', handleGeneral).listen('.QueueCompleted', handleGeneral)
+              .listen('EmergencyInserted', handleGeneral).listen('.EmergencyInserted', handleGeneral)
+              .listen('QueueDeleted', handleGeneral).listen('.QueueDeleted', handleGeneral)
+              .listen('QueueFrozen', handleGeneral).listen('.QueueFrozen', handleGeneral)
+              .listen('QueueResumed', handleGeneral).listen('.QueueResumed', handleGeneral);
           }
         } catch { /* ignore */ }
       }
       setLobbyQueues(queues);
     };
 
-    if (doctors.length > 0) fetchAllQueues();
-    return () => { doctors.forEach((doc) => echo.leave(`queue.${doc.id}`)); };
+    fetchAllQueues();
+    const lobbyInterval = setInterval(() => {
+      refreshLobbyData();
+    }, 10000);
+
+    return () => {
+      clearInterval(lobbyInterval);
+      activeChannels.forEach((ch) => echo.leave(ch));
+    };
   }, [viewMode, doctors]);
 
   const refreshLobbyData = async () => {
@@ -106,13 +136,22 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   useEffect(() => {
     if (!selectedDoctorId || viewMode !== 'single') return;
     fetchTodayQueue(selectedDoctorId);
+  }, [selectedDoctorId, viewMode]);
 
-    const channel = echo.channel(`queue.${queueDay?.id || selectedDoctorId}`);
-    channel.listen('QueueUpdated', (e: { queue_item: QueueItem }) => {
-      if (e.queue_item.status === 'Called') speakAnnouncement(e.queue_item.serial_no);
-    });
-    return () => { echo.leave(`queue.${queueDay?.id || selectedDoctorId}`); };
-  }, [selectedDoctorId, queueDay?.id, viewMode]);
+  useEffect(() => {
+    if (!queueDay?.id || viewMode !== 'single') return;
+    subscribeToQueue(queueDay.id);
+  }, [queueDay?.id, viewMode]);
+
+  const activeItem = items.find((i) => i.status === 'Called');
+
+  useEffect(() => {
+    if (viewMode !== 'single' || !activeItem) return;
+    if (activeItem.status === 'Called' && activeItem.serial_no !== lastAnnouncedSerialRef.current) {
+      lastAnnouncedSerialRef.current = activeItem.serial_no;
+      speakAnnouncement(activeItem.serial_no);
+    }
+  }, [activeItem, viewMode]);
 
   const speakAnnouncement = (serialNo: number) => {
     if (!('speechSynthesis' in window)) return;
@@ -141,7 +180,6 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
   const handleSelectDoctor = (id: number) => { setViewMode('single'); setSelectedDoctorId(id); };
 
-  const activeItem = items.find((i) => i.status === 'Called');
   const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no).slice(0, 5);
 
   // ── Theme toggle button (shared) ──

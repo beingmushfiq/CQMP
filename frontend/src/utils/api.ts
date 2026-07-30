@@ -93,17 +93,35 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+import { errorLogger } from './errorLogger';
+
 // ── Response Interceptor — global error handling ───────────────────────
 api.interceptors.response.use(
   // Pass successful responses through unchanged
   (response) => response,
 
-  (error: AxiosError) => {
+  (error: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
     const status = error.response?.status;
+    const url = error.config?.url || 'Unknown Endpoint';
+    const method = (error.config?.method || 'GET').toUpperCase();
+    const serverMessage = error.response?.data?.message || error.message;
+
+    // Log structured API error to global error logger
+    errorLogger.addError({
+      type: 'API_ERROR',
+      title: `API ${status ? `[${status}]` : '[Network Error]'} ${method} ${url}`,
+      message: serverMessage,
+      status,
+      statusText: error.response?.statusText || (error.code ?? 'ERR_NETWORK'),
+      url,
+      method,
+      requestData: error.config?.data ? parseJsonIfNeeded(error.config.data) : undefined,
+      responseData: error.response?.data,
+      stack: error.stack,
+    });
 
     if (status === 401) {
       // Token expired or invalid — clear local state and redirect to login.
-      // Using window.location avoids circular store import dependencies.
       localStorage.removeItem('cqmp_token');
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/';
@@ -111,14 +129,10 @@ api.interceptors.response.use(
     }
 
     if (status === 419) {
-      // CSRF token mismatch (Sanctum session expired).
-      // Reload forces the browser to fetch a fresh CSRF cookie.
-      console.warn('[CQMP] CSRF token expired. Reloading to refresh session.');
-      window.location.reload();
+      console.warn('[CQMP] Session / CSRF token expired.');
     }
 
     if (status === 429) {
-      // Rate limit exceeded — components should surface this as a toast.
       console.warn('[CQMP] Rate limit exceeded. Please slow down.');
     }
 
@@ -127,13 +141,22 @@ api.interceptors.response.use(
     }
 
     if (!error.response) {
-      // Network error / timeout / offline
       console.error('[CQMP] Network error — check your connection:', error.message);
     }
 
-    // Re-throw so individual callers can still handle specific errors
     return Promise.reject(error);
   }
 );
+
+function parseJsonIfNeeded(data: unknown) {
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch {
+      return data;
+    }
+  }
+  return data;
+}
 
 export default api;
