@@ -45,36 +45,43 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
         Route::get('/me',      [AuthController::class, 'me'])->name('api.me');
 
-        // Settings (Super Admin)
-        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-        Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
-        Route::post('/settings/upload', [SettingsController::class, 'upload'])->name('settings.upload');
+        // Settings (Super Admin / Admin)
+        Route::get('/settings', [SettingsController::class, 'index'])->middleware('role:Super Admin|Admin')->name('settings.index');
+        Route::put('/settings', [SettingsController::class, 'update'])->middleware('role:Super Admin|Admin')->name('settings.update');
+        Route::post('/settings/upload', [SettingsController::class, 'upload'])->middleware('role:Super Admin|Admin')->name('settings.upload');
 
-        // Profile
+        // Profile (Any Authenticated User)
         Route::put('/profile/name',     [ProfileController::class, 'updateName'])->name('profile.name');
         Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
         Route::post('/profile/avatar',  [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
 
-        // Patients
-        Route::apiResource('patients', PatientController::class);
+        // Patients (Super Admin, Admin, Receptionist, Doctor)
+        Route::apiResource('patients', PatientController::class)
+            ->middleware('role:Super Admin|Admin|Receptionist|Doctor');
 
-        // Queue Operations
+        // Queue Operations (Super Admin, Admin, Receptionist, Doctor, TV)
         Route::prefix('queue')->name('queue.')->group(function () {
-            Route::get('/today',      [QueueController::class, 'today'])->name('today');
-            Route::post('/open',      [QueueController::class, 'open'])->name('open');
-            Route::post('/create',    [QueueController::class, 'create'])->name('create');
-            Route::post('/call-next', [QueueController::class, 'callNext'])->name('call-next');
-            Route::post('/complete',  [QueueController::class, 'complete'])->name('complete');
-            Route::post('/skip',      [QueueController::class, 'skip'])->name('skip');
-            Route::post('/reinsert',  [QueueController::class, 'reinsert'])->name('reinsert');
-            Route::post('/emergency', [QueueController::class, 'emergency'])->name('emergency');
-            Route::post('/freeze',    [QueueController::class, 'freeze'])->name('freeze');
-            Route::post('/resume',    [QueueController::class, 'resume'])->name('resume');
-            Route::delete('/{queueItem}', [QueueController::class, 'destroy'])->name('delete');
+            Route::get('/today',      [QueueController::class, 'today'])->name('today'); // Allowed for viewing
+            
+            // Queue Management Operations (Super Admin, Admin, Receptionist, Doctor)
+            Route::middleware('role:Super Admin|Admin|Receptionist|Doctor')->group(function () {
+                Route::post('/open',      [QueueController::class, 'open'])->name('open');
+                Route::post('/create',    [QueueController::class, 'create'])->name('create');
+                Route::post('/call-next', [QueueController::class, 'callNext'])->name('call-next');
+                Route::post('/complete',  [QueueController::class, 'complete'])->name('complete');
+                Route::post('/skip',      [QueueController::class, 'skip'])->name('skip');
+                Route::post('/reinsert',  [QueueController::class, 'reinsert'])->name('reinsert');
+                Route::post('/emergency', [QueueController::class, 'emergency'])->name('emergency');
+                Route::post('/freeze',    [QueueController::class, 'freeze'])->name('freeze');
+                Route::post('/resume',    [QueueController::class, 'resume'])->name('resume');
+                Route::delete('/{queueItem}', [QueueController::class, 'destroy'])->name('delete');
+            });
         });
 
-        // Doctor Panel Actions
-        Route::post('/doctor/delay', [QueueController::class, 'updateDelay'])->name('doctor.delay');
+        // Doctor Panel Actions (Super Admin, Admin, Doctor)
+        Route::post('/doctor/delay', [QueueController::class, 'updateDelay'])
+            ->middleware('role:Super Admin|Admin|Doctor')
+            ->name('doctor.delay');
 
     });
 

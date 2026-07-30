@@ -263,9 +263,8 @@ class QueueController extends Controller
     public function publicBook(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            // Digits, spaces, +, -, (, ) — covers international phone formats
-            'phone'     => ['nullable', 'string', 'max:11', 'regex:/^[\d\s\+\-\(\)]+$/'],
+            'name'      => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s\.\-]+$/u'],
+            'phone'     => ['required', 'string', 'max:15', 'regex:/^[\d\s\+\-\(\)]+$/'],
             'doctor_id' => ['required', 'exists:doctors,id'],
         ]);
 

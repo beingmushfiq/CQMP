@@ -62,7 +62,9 @@ class QueueApiTest extends TestCase
 
     public function test_can_logout(): void
     {
-        $this->actingAs($this->admin, 'sanctum')
+        $token = $this->admin->createToken('test-token')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
              ->postJson('/api/v1/logout')
              ->assertOk();
     }
