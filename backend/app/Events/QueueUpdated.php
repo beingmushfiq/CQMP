@@ -5,11 +5,11 @@ namespace App\Events;
 use App\Models\QueueItem;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class QueueUpdated implements ShouldBroadcastNow
+class QueueUpdated implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -22,10 +22,15 @@ class QueueUpdated implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        return [
+        $channels = [
             new Channel('queue.' . $this->queueItem->queue_day_id),
-            new Channel('tv.' . $this->queueItem->queueDay->doctor_id),
         ];
+
+        if ($this->queueItem->queueDay?->doctor_id) {
+            $channels[] = new Channel('tv.' . $this->queueItem->queueDay->doctor_id);
+        }
+
+        return $channels;
     }
 
     public function broadcastWith(): array
@@ -38,11 +43,11 @@ class QueueUpdated implements ShouldBroadcastNow
                 'priority'       => $this->queueItem->priority,
                 'estimated_wait' => $this->queueItem->estimated_wait,
                 'called_at'      => $this->queueItem->called_at?->toIso8601String(),
-                'patient'        => [
+                'patient'        => $this->queueItem->patient ? [
                     'id'    => $this->queueItem->patient->id,
                     'name'  => $this->queueItem->patient->name,
                     'phone' => $this->queueItem->patient->phone,
-                ],
+                ] : null,
             ],
         ];
     }

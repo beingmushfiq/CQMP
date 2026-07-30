@@ -281,24 +281,17 @@ class QueueEngine
         }
 
         $waitTimes = [];
-        $cases     = [];
-        $ids       = [];
         $position  = 1;
 
         foreach ($waitingItems as $item) {
             $ewt                  = ($avgTime * $position) + $activeDelay;
             $waitTimes[$item->id] = $ewt;
-            $cases[]              = "WHEN id = {$item->id} THEN {$ewt}";
-            $ids[]                = (int) $item->id;
             $position++;
         }
 
-        // Single batch UPDATE using CASE WHEN — eliminates N individual queries
-        $caseStatement = implode(' ', $cases);
-        $idList        = implode(',', $ids);
-        DB::statement(
-            "UPDATE queue_items SET estimated_wait = CASE {$caseStatement} ELSE 0 END WHERE id IN ({$idList})"
-        );
+        foreach ($waitingItems as $item) {
+            QueueItem::where('id', $item->id)->update(['estimated_wait' => $waitTimes[$item->id]]);
+        }
 
         rescue(fn() => broadcast(new EstimatedTimeUpdated($queueDay, $waitTimes)), report: false);
     }

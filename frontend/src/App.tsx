@@ -86,23 +86,18 @@ function App() {
   }
 
   if (currentView === 'login') return <LoginForm />;
-  if (currentView === 'doctor') return <DoctorDashboard />;
   if (currentView === 'tv') return <div className="h-screen"><TvDisplay /></div>;
 
-  // Layout-wrapped views (Receptionist / Admin / Super Admin)
-  if (currentView === 'receptionist') {
-    return (
-      <Layout activeTab={activeTab} onTabChange={handleTabChange}>
-        {activeTab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
-        {activeTab === 'reception' && <ReceptionistDashboard />}
-        {activeTab === 'doctor' && <DoctorDashboard />}
-        {activeTab === 'tv' && <TvDisplay embedded />}
-        {activeTab === 'settings' && <SettingsPage />}
-      </Layout>
-    );
-  }
-
-  return <LoginForm />;
+  // Layout-wrapped views (Doctor, Receptionist, Admin, Super Admin)
+  return (
+    <Layout activeTab={activeTab} onTabChange={handleTabChange}>
+      {activeTab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
+      {activeTab === 'reception' && <ReceptionistDashboard />}
+      {activeTab === 'doctor' && <DoctorDashboard />}
+      {activeTab === 'tv' && <TvDisplay embedded />}
+      {activeTab === 'settings' && <SettingsPage />}
+    </Layout>
+  );
 }
 
 export default App;

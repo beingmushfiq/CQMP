@@ -255,9 +255,9 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                   onChange={(e) => setDoctorId(Number(e.target.value))}
                   className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none min-h-[52px]"
                 >
-                  <option value="" disabled>{t('visitor.choose.doctor')}</option>
+                  <option value="" disabled className="text-slate-900 bg-white dark:bg-slate-800 dark:text-white">{t('visitor.choose.doctor')}</option>
                   {doctors.map((d) => (
-                    <option key={d.id} value={d.id}>
+                    <option key={d.id} value={d.id} className="text-slate-900 bg-white dark:bg-slate-800 dark:text-white">
                       {d.name} — {d.specialization}
                     </option>
                   ))}

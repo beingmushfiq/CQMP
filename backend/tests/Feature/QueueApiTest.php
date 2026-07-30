@@ -232,6 +232,32 @@ class QueueApiTest extends TestCase
         $this->assertEquals('Completed', \App\Models\QueueItem::find($item['id'])->status);
     }
 
+    public function test_can_complete_queue_item_when_no_remaining_waiting_items(): void
+    {
+        $clinic   = Clinic::factory()->create();
+        $doctor   = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+        $queueDay = QueueDay::factory()->create([
+            'clinic_id' => $clinic->id,
+            'doctor_id' => $doctor->id,
+            'date'      => Carbon::today()->toDateString(),
+            'status'    => 'opened',
+        ]);
+        $patient = Patient::factory()->create();
+
+        $item = $this->actingAs($this->admin, 'sanctum')
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id])
+                     ->json('data');
+
+        // Complete the only item in queue (recalculateWaitTimes will encounter empty waiting collection)
+        $response = $this->actingAs($this->admin, 'sanctum')
+                         ->postJson('/api/v1/queue/complete', [
+                             'queue_item_id' => $item['id'],
+                         ]);
+
+        $response->assertOk();
+        $this->assertEquals('Completed', \App\Models\QueueItem::find($item['id'])->status);
+    }
+
     public function test_can_skip_queue_item(): void
     {
         $clinic   = Clinic::factory()->create();
