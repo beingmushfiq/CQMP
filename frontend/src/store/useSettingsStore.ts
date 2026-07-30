@@ -18,7 +18,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const res = await api.get('/settings');
       set({ settings: res.data, loaded: true });
     } catch {
-      set({ loaded: true });
+      try {
+        const res = await api.get('/settings/public');
+        set({ settings: res.data, loaded: true });
+      } catch {
+        set({ loaded: true });
+      }
     }
   },
 
