@@ -177,6 +177,8 @@ const en = {
   'tv.on.break.wait': 'Please wait for the doctor to resume',
   'tv.live': 'Live Broadcast',
   'tv.repeat.audio': 'Repeat Audio',
+  'tv.audio.on': 'Audio On',
+  'tv.audio.off': 'Audio Off',
   'tv.doctors': 'Doctors',
   'tv.change': 'Change',
   'tv.log.out': 'Log Out',

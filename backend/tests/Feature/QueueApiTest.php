@@ -307,5 +307,28 @@ class QueueApiTest extends TestCase
             'name'  => 'Aayan',
         ]);
     }
+
+    public function test_can_delete_queue_item(): void
+    {
+        $clinic   = Clinic::factory()->create();
+        $doctor   = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+        $queueDay = QueueDay::factory()->create([
+            'clinic_id' => $clinic->id,
+            'doctor_id' => $doctor->id,
+            'date'      => Carbon::today()->toDateString(),
+            'status'    => 'opened',
+        ]);
+        $patient = Patient::factory()->create();
+
+        $item = $this->actingAsJwt($this->admin)
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id])
+                     ->json('data');
+
+        $response = $this->actingAsJwt($this->admin)
+                         ->deleteJson("/api/v1/queue/{$item['id']}");
+
+        $response->assertOk();
+        $this->assertDatabaseMissing('queue_items', ['id' => $item['id']]);
+    }
 }
 

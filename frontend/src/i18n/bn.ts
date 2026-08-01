@@ -177,6 +177,8 @@ const bn: Record<string, string> = {
   'tv.on.break.wait': 'ডাক্তার ফিরে আসার অপেক্ষা করুন',
   'tv.live': 'লাইভ ব্রডকাস্ট',
   'tv.repeat.audio': 'অডিও পুনরাবৃত্তি',
+  'tv.audio.on': 'অডিও চালু',
+  'tv.audio.off': 'অডিও বন্ধ',
   'tv.doctors': 'ডাক্তার',
   'tv.change': 'পরিবর্তন',
   'tv.log.out': 'লগ আউট',

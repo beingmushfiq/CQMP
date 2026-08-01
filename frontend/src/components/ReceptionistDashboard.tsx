@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import api from '../utils/api';
-import { Search, UserPlus, ShieldAlert, ArrowDownUp, PhoneCall, Printer, Trash2, CheckCircle2, SkipForward, X, AlertTriangle, Bookmark, Pause, Play } from 'lucide-react';
+import { Search, UserPlus, ShieldAlert, ArrowDownUp, PhoneCall, Printer, Trash2, CheckCircle2, SkipForward, X, AlertTriangle, Bookmark, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
@@ -28,6 +28,10 @@ function saveSmartDefault(name: string, phone: string) {
 
 export const ReceptionistDashboard: React.FC = () => {
   const { queueDay, items, fetchTodayQueue, registerWalkIn, insertEmergency, reinsertItem, deleteItem, completeItem, skipItem, toggleQueuePause, callNext } = useQueueStore();
+  const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no);
+  const calledItem = items.find((i) => i.status === 'Called');
+  const completedItems = items.filter((i) => i.status === 'Completed').sort((a, b) => a.serial_no - b.serial_no);
+  const skippedItems = items.filter((i) => i.status === 'Skipped').sort((a, b) => a.serial_no - b.serial_no);
   const { logout } = useAuthStore();
   const { get: getSetting } = useSettingsStore();
   const { t } = useLanguageStore();
@@ -51,6 +55,47 @@ export const ReceptionistDashboard: React.FC = () => {
 
   // Confirm modal state
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
+  // Audio settings & logic
+  const [isAudioEnabled, setIsAudioEnabled] = useState(() => {
+    const saved = localStorage.getItem('cqmp_receptionist_audio_enabled');
+    return saved !== 'false'; // defaults to true
+  });
+  const lastAnnouncedSerialRef = useRef<number | null>(null);
+
+  const speakAnnouncement = (serialNo: number, force = false) => {
+    if (!isAudioEnabled && !force) return;
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    const makeUtterance = (text: string, lang: string, rate: number) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang;
+      u.rate = rate;
+      u.pitch = 0.85;
+      u.volume = 1.0;
+      return u;
+    };
+
+    const announce = () => {
+      window.speechSynthesis.speak(makeUtterance(`সিরিয়াল নম্বর ${serialNo}, অনুগ্রহ করে চিকিৎসকের কক্ষে প্রবেশ করুন।`, 'bn-BD', 0.8));
+      setTimeout(() => {
+        window.speechSynthesis.speak(makeUtterance(`Serial number ${serialNo}, please enter the doctor's room.`, 'en-US', 0.85));
+      }, 3500);
+    };
+
+    announce();
+    setTimeout(announce, 8500);
+    setTimeout(announce, 17000);
+  };
+
+  useEffect(() => {
+    if (!calledItem) return;
+    if (calledItem.serial_no !== lastAnnouncedSerialRef.current) {
+      lastAnnouncedSerialRef.current = calledItem.serial_no;
+      speakAnnouncement(calledItem.serial_no);
+    }
+  }, [calledItem]);
 
   // Smart Default: load last used patient data on mount
   useEffect(() => {
@@ -274,10 +319,26 @@ export const ReceptionistDashboard: React.FC = () => {
     });
   };
 
-  const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no);
-  const calledItem = items.find((i) => i.status === 'Called');
-  const completedItems = items.filter((i) => i.status === 'Completed').sort((a, b) => a.serial_no - b.serial_no);
-  const skippedItems = items.filter((i) => i.status === 'Skipped').sort((a, b) => a.serial_no - b.serial_no);
+  const AudioToggle = () => (
+    <button
+      onClick={() => {
+        const nextState = !isAudioEnabled;
+        setIsAudioEnabled(nextState);
+        localStorage.setItem('cqmp_receptionist_audio_enabled', String(nextState));
+      }}
+      className={`p-1 px-2.5 rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 ${
+        isAudioEnabled
+          ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+          : 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/30'
+      }`}
+      title={isAudioEnabled ? t('tv.audio.on') : t('tv.audio.off')}
+    >
+      {isAudioEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+      <span className="text-[10px] font-bold select-none leading-none">
+        {isAudioEnabled ? t('tv.audio.on') : t('tv.audio.off')}
+      </span>
+    </button>
+  );
 
   // Doctor Selection Screen
   if (!selectedDoctorId) {
@@ -452,6 +513,7 @@ export const ReceptionistDashboard: React.FC = () => {
                     {queueDay.status === 'opened' ? <><Pause className="w-3 h-3" /> {t('reception.pause')}</> : <><Play className="w-3 h-3" /> {t('reception.resume')}</>}
                   </button>
                 )}
+                <AudioToggle />
               </div>
             </div>
 
@@ -475,6 +537,13 @@ export const ReceptionistDashboard: React.FC = () => {
                         className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer shadow-md shadow-amber-500/10 transition-all"
                       >
                         <SkipForward className="w-3.5 h-3.5" /> Skip
+                      </button>
+                      <button
+                        onClick={() => speakAnnouncement(calledItem.serial_no, true)}
+                        className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-600/10 hover:bg-indigo-100 dark:hover:bg-indigo-600/20 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
+                        title="Repeat Voice Announcement"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" /> Repeat Call
                       </button>
                     </div>
                   </div>

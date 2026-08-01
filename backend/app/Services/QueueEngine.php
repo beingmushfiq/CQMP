@@ -44,7 +44,9 @@ class QueueEngine
             ]);
         }
 
-        rescue(fn() => broadcast(new QueueOpened($queueDay)), report: false);
+        rescue(function () use ($queueDay) {
+            broadcast(new QueueOpened($queueDay));
+        }, report: false);
 
         return $queueDay;
     }
@@ -90,7 +92,9 @@ class QueueEngine
             ]);
 
             $item->load(['patient', 'queueDay']);
-            rescue(fn() => broadcast(new QueueCreated($item)), report: false);
+            rescue(function () use ($item) {
+                broadcast(new QueueCreated($item));
+            }, report: false);
             NodeBroadcaster::broadcast('queue-created', $item);
 
             return $item;
@@ -123,7 +127,9 @@ class QueueEngine
             ]);
 
             $nextItem->load(['patient', 'queueDay']);
-            rescue(fn() => broadcast(new QueueUpdated($nextItem)), report: false);
+            rescue(function () use ($nextItem) {
+                broadcast(new QueueUpdated($nextItem));
+            }, report: false);
             NodeBroadcaster::broadcast('queue-updated', $nextItem);
 
             return $nextItem;
@@ -142,7 +148,9 @@ class QueueEngine
             ]);
 
             $item->load(['patient', 'queueDay']);
-            rescue(fn() => broadcast(new QueueCompleted($item)), report: false);
+            rescue(function () use ($item) {
+                broadcast(new QueueCompleted($item));
+            }, report: false);
             $this->recalculateWaitTimes($item->queueDay);
 
             return $item;
@@ -157,7 +165,9 @@ class QueueEngine
         return DB::transaction(function () use ($item) {
             $item->update(['status' => 'Skipped']);
             $item->load(['patient', 'queueDay']);
-            rescue(fn() => broadcast(new QueueUpdated($item)), report: false);
+            rescue(function () use ($item) {
+                broadcast(new QueueUpdated($item));
+            }, report: false);
             $this->recalculateWaitTimes($item->queueDay);
 
             return $item;
@@ -189,7 +199,9 @@ class QueueEngine
                 ->get();
 
             foreach ($allItems as $it) {
-                rescue(fn() => broadcast(new QueueUpdated($it)), report: false);
+                rescue(function () use ($it) {
+                    broadcast(new QueueUpdated($it));
+                }, report: false);
             }
 
             $item->load(['patient', 'queueDay']);
@@ -226,7 +238,9 @@ class QueueEngine
             ]);
 
             $item->load(['patient', 'queueDay']);
-            rescue(fn() => broadcast(new EmergencyInserted($item)), report: false);
+            rescue(function () use ($item) {
+                broadcast(new EmergencyInserted($item));
+            }, report: false);
             $this->recalculateWaitTimes($queueDay);
 
             return $item;
@@ -239,7 +253,9 @@ class QueueEngine
     public function freeze(QueueDay $queueDay): QueueDay
     {
         $queueDay->update(['status' => 'paused']);
-        rescue(fn() => broadcast(new QueueFrozen($queueDay)), report: false);
+        rescue(function () use ($queueDay) {
+            broadcast(new QueueFrozen($queueDay));
+        }, report: false);
         return $queueDay;
     }
 
@@ -249,7 +265,9 @@ class QueueEngine
     public function resume(QueueDay $queueDay): QueueDay
     {
         $queueDay->update(['status' => 'opened']);
-        rescue(fn() => broadcast(new QueueResumed($queueDay)), report: false);
+        rescue(function () use ($queueDay) {
+            broadcast(new QueueResumed($queueDay));
+        }, report: false);
         return $queueDay;
     }
 
@@ -296,7 +314,9 @@ class QueueEngine
             QueueItem::where('id', $item->id)->update(['estimated_wait' => $waitTimes[$item->id]]);
         }
 
-        rescue(fn() => broadcast(new EstimatedTimeUpdated($queueDay, $waitTimes)), report: false);
+        rescue(function () use ($queueDay, $waitTimes) {
+            broadcast(new EstimatedTimeUpdated($queueDay, $waitTimes));
+        }, report: false);
     }
 
     /**
@@ -307,16 +327,24 @@ class QueueEngine
         DB::transaction(function () use ($item) {
             $itemId = $item->id;
             $queueDayId = $item->queue_day_id;
-            $doctorId = $item->queueDay->doctor_id;
+            
+            $queueDay = $item->queueDay;
+            $doctorId = $queueDay ? $queueDay->doctor_id : null;
 
             $item->delete();
 
-            $queueDay = QueueDay::find($queueDayId);
-            if ($queueDay) {
-                $this->recalculateWaitTimes($queueDay);
+            if ($queueDayId) {
+                $queueDay = $queueDay ?: QueueDay::find($queueDayId);
+                if ($queueDay) {
+                    $this->recalculateWaitTimes($queueDay);
+                }
             }
 
-            rescue(fn() => broadcast(new QueueDeleted($itemId, $queueDayId, $doctorId)), report: false);
+            if ($itemId && $queueDayId && $doctorId) {
+                rescue(function () use ($itemId, $queueDayId, $doctorId) {
+                    broadcast(new QueueDeleted($itemId, $queueDayId, $doctorId));
+                }, report: false);
+            }
         });
     }
 }

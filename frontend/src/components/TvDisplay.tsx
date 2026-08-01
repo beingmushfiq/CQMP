@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../store/useQueueStore';
 import { echo } from '../utils/echo';
 import api, { createPublicApi, getStorageBaseUrl } from '../utils/api';
-import { Monitor, Volume2, UserCheck, Play, Pause, Sun, Moon, Bookmark, Coffee, LogOut, Maximize, Minimize, User } from 'lucide-react';
+import { Monitor, Volume2, VolumeX, UserCheck, Play, Pause, Sun, Moon, Bookmark, Coffee, LogOut, Maximize, Minimize, User } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useLanguageStore } from '../store/useLanguageStore';
@@ -44,6 +44,10 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const [clock, setClock] = useState(new Date().toLocaleTimeString());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(() => {
+    const saved = localStorage.getItem('cqmp_audio_enabled');
+    return saved !== 'false'; // defaults to true
+  });
 
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date().toLocaleTimeString()), 1000);
@@ -226,7 +230,8 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
     }
   }, [activeItem, viewMode]);
 
-  const speakAnnouncement = (serialNo: number) => {
+  const speakAnnouncement = (serialNo: number, force = false) => {
+    if (!isAudioEnabled && !force) return;
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
 
@@ -254,6 +259,28 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const handleSelectDoctor = (id: number) => { setViewMode('single'); setSelectedDoctorId(id); };
 
   const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no).slice(0, 5);
+
+  // ── Audio toggle button (shared) ──
+  const AudioToggle = () => (
+    <button
+      onClick={() => {
+        const nextState = !isAudioEnabled;
+        setIsAudioEnabled(nextState);
+        localStorage.setItem('cqmp_audio_enabled', String(nextState));
+      }}
+      className={`p-2 rounded-lg border cursor-pointer transition-all flex items-center gap-1.5 ${
+        isAudioEnabled
+          ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+          : 'bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/30'
+      }`}
+      title={isAudioEnabled ? t('tv.audio.on') : t('tv.audio.off')}
+    >
+      {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+      <span className="text-[10px] md:text-xs font-bold hidden sm:inline select-none leading-none">
+        {isAudioEnabled ? t('tv.audio.on') : t('tv.audio.off')}
+      </span>
+    </button>
+  );
 
   // ── Theme toggle button (shared) ──
   const ThemeToggle = () => (
@@ -388,6 +415,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
             <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs mt-1">{t('tv.lobby.desc')}</p>
           </div>
           <div className="flex gap-2 md:gap-3 items-center">
+            <AudioToggle />
             <button onClick={toggleFullscreen} className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 md:px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs cursor-pointer transition-all flex items-center gap-1.5" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
               {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
             </button>
@@ -509,6 +537,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
           </div>
           {!embedded && (
             <>
+              <AudioToggle />
               <button onClick={toggleFullscreen} className="flex bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700/80 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs font-semibold cursor-pointer transition-all items-center gap-2" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
                 {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
               </button>
@@ -561,7 +590,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
           {activeItem && (
             <button
-              onClick={() => speakAnnouncement(activeItem.serial_no)}
+              onClick={() => speakAnnouncement(activeItem.serial_no, true)}
               className="mt-3 md:mt-5 w-full flex items-center justify-center gap-2 bg-indigo-50 dark:bg-indigo-600/10 hover:bg-indigo-100 dark:hover:bg-indigo-600/20 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold py-2 md:py-3 px-3 md:px-4 rounded-lg text-xs md:text-sm cursor-pointer transition-all"
             >
               <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4" /> {t('tv.repeat.audio')}
