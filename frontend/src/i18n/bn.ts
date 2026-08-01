@@ -48,6 +48,7 @@ const bn: Record<string, string> = {
   'login.book.another': 'আরেকটি বুক করুন',
   'login.doctor': 'ডাক্তার',
   'login.select.doctor': 'ডাক্তার নির্বাচন করুন',
+  'login.doctor.refresh.note': 'নোট: বুকিং করার সময় ডাক্তারের নাম না দেখা গেলে, দয়া করে রিফ্রেশ বা রিলোড করুন',
   'login.full.name': 'পূর্ণ নাম',
   'login.phone': 'ফোন',
   'login.phone.optional': 'ঐচ্ছিক',

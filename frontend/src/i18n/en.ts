@@ -48,6 +48,7 @@ const en = {
   'login.book.another': 'Book Another',
   'login.doctor': 'Doctor',
   'login.select.doctor': 'Select doctor',
+  'login.doctor.refresh.note': "Note: If you don't see the doctor's name when booking, try to refresh or reload and wait for a minute to load the server",
   'login.full.name': 'Full Name',
   'login.phone': 'Phone',
   'login.phone.optional': 'Optional',

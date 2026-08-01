@@ -52,6 +52,8 @@ php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+php artisan queue:table --force
+php artisan optimize
 ```
 
 7. Ensure the API subdomain uses the backend public directory as its document root.

@@ -45,10 +45,10 @@ class PatientController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        // If phone is provided, de-duplicate by phone number.
+        // If phone is provided, de-duplicate by phone number and update name to latest input.
         // Otherwise, always create a new record keyed by name.
         if (!empty($data['phone'])) {
-            $patient = Patient::firstOrCreate(
+            $patient = Patient::updateOrCreate(
                 ['phone' => $data['phone']],
                 ['name'  => $data['name']]
             );

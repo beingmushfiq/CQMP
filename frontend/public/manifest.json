@@ -8,7 +8,11 @@
   "background_color": "#0F172A",
   "theme_color": "#6366F1",
   "orientation": "any",
-  "categories": ["medical", "health", "productivity"],
+  "categories": [
+    "medical",
+    "health",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icon-192.svg",
@@ -29,14 +33,24 @@
       "short_name": "Desk",
       "description": "Open the receptionist queue panel",
       "url": "/?role=receptionist",
-      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Doctor Dashboard",
       "short_name": "Doctor",
       "description": "Open the doctor queue view",
       "url": "/?role=doctor",
-      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

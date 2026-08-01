@@ -282,5 +282,32 @@ class QueueApiTest extends TestCase
         $response->assertOk();
         $this->assertEquals('Skipped', \App\Models\QueueItem::find($item['id'])->status);
     }
+
+    public function test_public_booking_updates_patient_name_when_phone_matches(): void
+    {
+        $clinic = Clinic::factory()->create();
+        $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id, 'is_available' => true]);
+
+        // Pre-existing patient with phone number and old name
+        Patient::factory()->create([
+            'name'  => 'Mushfiq',
+            'phone' => '01700000000',
+        ]);
+
+        // Book public serial with same phone number but new name
+        $response = $this->postJson('/api/v1/public/book', [
+            'name'      => 'Aayan',
+            'phone'     => '01700000000',
+            'doctor_id' => $doctor->id,
+        ]);
+
+        $response->assertOk()
+                 ->assertJsonPath('patient.name', 'Aayan');
+
+        $this->assertDatabaseHas('patients', [
+            'phone' => '01700000000',
+            'name'  => 'Aayan',
+        ]);
+    }
 }
 

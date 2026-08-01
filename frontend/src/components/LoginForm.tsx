@@ -33,8 +33,9 @@ export const LoginForm: React.FC = () => {
   const { get: getSetting } = useSettingsStore();
   const { lang, toggle: toggleLang, t } = useLanguageStore();
 
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [doctorId, setDoctorId] = useState<number | null>(null);
+  const DEFAULT_DOCTOR: Doctor = { id: 1, name: 'Dr. Asif', specialization: 'General Physician' };
+  const [doctors, setDoctors] = useState<Doctor[]>([DEFAULT_DOCTOR]);
+  const [doctorId, setDoctorId] = useState<number | null>(1);
   const [patientName, setPatientName] = useState('');
   const [phone, setPhone] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -43,10 +44,13 @@ export const LoginForm: React.FC = () => {
 
   useEffect(() => {
     publicApi.get('/public/doctors').then((r) => {
-      const data = Array.isArray(r.data) ? r.data : [];
+      const data = Array.isArray(r.data) && r.data.length > 0 ? r.data : [DEFAULT_DOCTOR];
       setDoctors(data);
-      if (data.length === 1) setDoctorId(data[0].id);
-    }).catch(() => setDoctors([]));
+      if (data.length > 0 && !doctorId) setDoctorId(data[0].id);
+    }).catch(() => {
+      setDoctors([DEFAULT_DOCTOR]);
+      setDoctorId(1);
+    });
   }, []);
 
   useKeyboardShortcut({
@@ -273,6 +277,9 @@ export const LoginForm: React.FC = () => {
                     ))}
                   </select>
                 )}
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 font-normal">
+                  {t('login.doctor.refresh.note', "Note: If you don't see the doctor's name when booking, try to refresh or reload and wait for a minute to load the server")}
+                </p>
               </div>
 
               {/* Name */}

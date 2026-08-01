@@ -36,23 +36,21 @@ Pusher.logToConsole = import.meta.env.DEV;
  *  - No localhost fallbacks — env vars must be set
  */
 
-const broadcastDriver = (import.meta.env.VITE_BROADCAST_DRIVER ?? 'reverb').trim().toLowerCase();
+const broadcastDriver = (import.meta.env.VITE_BROADCAST_DRIVER ?? import.meta.env.VITE_BROADCASTER ?? 'reverb').trim().toLowerCase();
 const hasPusherConfig = Boolean(import.meta.env.VITE_PUSHER_APP_KEY?.trim());
 
 // Typed as the union of both possible drivers
 let echoInstance: Echo<'reverb'> | Echo<'pusher'>;
 
 if (broadcastDriver === 'pusher' || (hasPusherConfig && broadcastDriver !== 'reverb')) {
-  // ── Pusher cloud driver ──────────────────────────────────────────
-  const pusherScheme = (import.meta.env.VITE_PUSHER_SCHEME ?? 'https').trim().toLowerCase();
-  const pusherCluster = (import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1').trim();
+  const pusherCluster = (import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'us3').trim();
 
   echoInstance = new Echo({
     broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY ?? 'replace-with-pusher-key',
+    key: import.meta.env.VITE_PUSHER_APP_KEY ?? '4a8eb36ef10bbdb904b3',
     cluster: pusherCluster,
-    forceTLS: pusherScheme === 'https',
-    encrypted: pusherScheme === 'https',
+    forceTLS: true,
+    encrypted: true,
     disableStats: true,
   });
 } else {
@@ -86,8 +84,6 @@ if (broadcastDriver === 'pusher' || (hasPusherConfig && broadcastDriver !== 'rev
     encrypted: isSecure,
 
     // Both transports required: 'ws' for dev (http), 'wss' for prod (https).
-    // Using ['ws'] only causes silent failures on HTTPS pages due to
-    // browser mixed-content blocking.
     enabledTransports: ['ws', 'wss'],
 
     // Do not report statistics to analytics endpoint
@@ -95,4 +91,6 @@ if (broadcastDriver === 'pusher' || (hasPusherConfig && broadcastDriver !== 'rev
   });
 }
 
+(window as any).Echo = echoInstance;
 export const echo = echoInstance;
+

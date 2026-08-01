@@ -268,9 +268,9 @@ class QueueController extends Controller
             'doctor_id' => ['required', 'exists:doctors,id'],
         ]);
 
-        // De-duplicate by phone if provided; otherwise create fresh record by name
+        // De-duplicate by phone if provided (updating name to current input); otherwise create fresh record by name
         if (!empty($data['phone'])) {
-            $patient = Patient::firstOrCreate(
+            $patient = Patient::updateOrCreate(
                 ['phone' => $data['phone']],
                 ['name'  => $data['name']]
             );

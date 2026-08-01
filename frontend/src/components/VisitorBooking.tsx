@@ -24,8 +24,9 @@ const publicApi = createPublicApi();
 
 export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
   const { t } = useLanguageStore();
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [doctorId, setDoctorId] = useState<number | null>(null);
+  const DEFAULT_DOCTOR: Doctor = { id: 1, name: 'Dr. Asif', specialization: 'General Physician' };
+  const [doctors, setDoctors] = useState<Doctor[]>([DEFAULT_DOCTOR]);
+  const [doctorId, setDoctorId] = useState<number | null>(1);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,7 +69,14 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
   });
 
   useEffect(() => {
-    publicApi.get('/public/doctors').then((r) => setDoctors(Array.isArray(r.data) ? r.data : [])).catch(() => setDoctors([]));
+    publicApi.get('/public/doctors').then((r) => {
+      const data = Array.isArray(r.data) && r.data.length > 0 ? r.data : [DEFAULT_DOCTOR];
+      setDoctors(data);
+      if (data.length > 0 && !doctorId) setDoctorId(data[0].id);
+    }).catch(() => {
+      setDoctors([DEFAULT_DOCTOR]);
+      setDoctorId(1);
+    });
   }, []);
 
   const handleBook = async (e: React.FormEvent) => {
