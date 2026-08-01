@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../store/useQueueStore';
 import { echo } from '../utils/echo';
-import api, { getStorageBaseUrl } from '../utils/api';
+import api, { createPublicApi, getStorageBaseUrl } from '../utils/api';
 import { Monitor, Volume2, UserCheck, Play, Pause, Sun, Moon, Bookmark, Coffee, LogOut, Maximize, Minimize, User } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { UserProfile } from './UserProfile';
+import { io } from 'socket.io-client';
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
 
@@ -17,12 +18,25 @@ interface TvDisplayProps {
 }
 
 export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
-  const { queueDay, items, fetchTodayQueue, subscribeToQueue } = useQueueStore();
+  const { queueDay: authQueueDay, items: authItems, fetchTodayQueue, subscribeToQueue } = useQueueStore();
   const { theme, toggleTheme } = useThemeStore();
   const { logout, user } = useAuthStore();
   const { get: getSetting } = useSettingsStore();
   const { t } = useLanguageStore();
   const [doctors, setDoctors] = useState<any[]>([]);
+
+  // Public API instance — used when no auth token is present (public TV view)
+  const publicApi = React.useMemo(() => createPublicApi(), []);
+  // True when the TV is opened without a staff login (public display mode)
+  const isPublicView = !localStorage.getItem('cqmp_token');
+
+  // Public-mode queue state (replaces store when unauthenticated)
+  const [pubQueueDay, setPubQueueDay] = useState<any>(null);
+  const [pubItems, setPubItems] = useState<QueueItem[]>([]);
+
+  // Unified queue state — use public state when not logged in
+  const queueDay = isPublicView ? pubQueueDay : authQueueDay;
+  const items = isPublicView ? pubItems : authItems;
 
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'single' | 'lobby'>('single');
@@ -51,7 +65,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   }, []);
 
   useEffect(() => {
-    api.get('/public/doctors').then((res) => {
+    publicApi.get('/public/doctors').then((res) => {
       const docs = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       if (docs.length > 0) {
         setDoctors(docs);
@@ -72,37 +86,48 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
     const activeChannels: string[] = [];
 
+    // Choose data source based on auth state
+    const fetchQueue = (doc: any) =>
+      isPublicView
+        ? publicApi.get(`/public/queue?doctor_id=${doc.id}`)
+        : api.get(`/queue/today?doctor_id=${doc.id}`);
+
+    const parseItems = (res: any): any[] => {
+      const raw = res.data.items;
+      return Array.isArray(raw) ? raw : (raw?.data || []);
+    };
+
     const fetchAllQueues = async () => {
       const queues: typeof lobbyQueues = {};
       for (const doc of doctors) {
         try {
-          const res = await api.get(`/queue/today?doctor_id=${doc.id}`);
-          const qItems = res.data.items.data || [];
+          const res = await fetchQueue(doc);
+          const qItems = parseItems(res);
           queues[doc.id] = {
             called: qItems.find((i: any) => i.status === 'Called') || null,
             waiting: qItems.filter((i: any) => i.status === 'Waiting').slice(0, 3),
           };
 
-          const qDayId = res.data.queue_day?.id;
-          if (qDayId) {
-            const channelName = `queue.${qDayId}`;
-            if (!activeChannels.includes(channelName)) {
-              activeChannels.push(channelName);
+          // Only subscribe via WebSocket when authenticated
+          if (!isPublicView) {
+            const qDayId = res.data.queue_day?.id;
+            if (qDayId) {
+              const channelName = `queue.${qDayId}`;
+              if (!activeChannels.includes(channelName)) activeChannels.push(channelName);
+              const ch = echo.channel(channelName);
+              const handleUpdated = (e: { queue_item: QueueItem }) => {
+                if (e?.queue_item?.status === 'Called') speakAnnouncement(e.queue_item.serial_no);
+                refreshLobbyData();
+              };
+              const handleGeneral = () => refreshLobbyData();
+              ch.listen('QueueUpdated', handleUpdated).listen('.QueueUpdated', handleUpdated)
+                .listen('QueueCreated', handleGeneral).listen('.QueueCreated', handleGeneral)
+                .listen('QueueCompleted', handleGeneral).listen('.QueueCompleted', handleGeneral)
+                .listen('EmergencyInserted', handleGeneral).listen('.EmergencyInserted', handleGeneral)
+                .listen('QueueDeleted', handleGeneral).listen('.QueueDeleted', handleGeneral)
+                .listen('QueueFrozen', handleGeneral).listen('.QueueFrozen', handleGeneral)
+                .listen('QueueResumed', handleGeneral).listen('.QueueResumed', handleGeneral);
             }
-            const ch = echo.channel(channelName);
-            const handleUpdated = (e: { queue_item: QueueItem }) => {
-              if (e?.queue_item?.status === 'Called') speakAnnouncement(e.queue_item.serial_no);
-              refreshLobbyData();
-            };
-            const handleGeneral = () => refreshLobbyData();
-
-            ch.listen('QueueUpdated', handleUpdated).listen('.QueueUpdated', handleUpdated)
-              .listen('QueueCreated', handleGeneral).listen('.QueueCreated', handleGeneral)
-              .listen('QueueCompleted', handleGeneral).listen('.QueueCompleted', handleGeneral)
-              .listen('EmergencyInserted', handleGeneral).listen('.EmergencyInserted', handleGeneral)
-              .listen('QueueDeleted', handleGeneral).listen('.QueueDeleted', handleGeneral)
-              .listen('QueueFrozen', handleGeneral).listen('.QueueFrozen', handleGeneral)
-              .listen('QueueResumed', handleGeneral).listen('.QueueResumed', handleGeneral);
           }
         } catch { /* ignore */ }
       }
@@ -110,44 +135,85 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
     };
 
     fetchAllQueues();
-    const lobbyInterval = setInterval(() => {
-      refreshLobbyData();
-    }, 10000);
+
+    // Public mode: poll every 10 s since WebSocket requires auth
+    const pollTimer = isPublicView ? setInterval(fetchAllQueues, 10_000) : null;
 
     return () => {
-      clearInterval(lobbyInterval);
+      if (pollTimer) clearInterval(pollTimer);
       activeChannels.forEach((ch) => echo.leave(ch));
     };
-  }, [viewMode, doctors]);
+  }, [viewMode, doctors, isPublicView]);
 
   const refreshLobbyData = async () => {
     const queues: typeof lobbyQueues = {};
+    const fetchQueue = (doc: any) =>
+      isPublicView
+        ? publicApi.get(`/public/queue?doctor_id=${doc.id}`)
+        : api.get(`/queue/today?doctor_id=${doc.id}`);
+    const parseItems = (res: any): any[] => {
+      const raw = res.data.items;
+      return Array.isArray(raw) ? raw : (raw?.data || []);
+    };
     for (const doc of doctors) {
-      const res = await api.get(`/queue/today?doctor_id=${doc.id}`);
-      const qItems = res.data.items.data || [];
-      queues[doc.id] = {
-        called: qItems.find((i: any) => i.status === 'Called') || null,
-        waiting: qItems.filter((i: any) => i.status === 'Waiting').slice(0, 3),
-      };
+      try {
+        const res = await fetchQueue(doc);
+        const qItems = parseItems(res);
+        queues[doc.id] = {
+          called: qItems.find((i: any) => i.status === 'Called') || null,
+          waiting: qItems.filter((i: any) => i.status === 'Waiting').slice(0, 3),
+        };
+      } catch { /* ignore */ }
     }
     setLobbyQueues(queues);
   };
 
+  // ── Single-doctor view: fetch queue for selected doctor ──────────────
   useEffect(() => {
     if (!selectedDoctorId || viewMode !== 'single') return;
-    fetchTodayQueue(selectedDoctorId);
 
-    const singleInterval = setInterval(() => {
+    if (isPublicView) {
+      // Public mode: poll /public/queue every 10 s (no WebSocket auth needed)
+      const fetchPublic = async () => {
+        try {
+          const res = await publicApi.get(`/public/queue?doctor_id=${selectedDoctorId}`);
+          setPubQueueDay(res.data.queue_day ?? null);
+          const raw: any[] = Array.isArray(res.data.items) ? res.data.items : [];
+          setPubItems(raw as QueueItem[]);
+          // Announce newly called serial
+          const called = raw.find((i: any) => i.status === 'Called');
+          if (called && called.serial_no !== lastAnnouncedSerialRef.current) {
+            lastAnnouncedSerialRef.current = called.serial_no;
+            speakAnnouncement(called.serial_no);
+          }
+        } catch { /* silent — display stays with last known state */ }
+      };
+      fetchPublic();
+      const timer = setInterval(fetchPublic, 10_000);
+      return () => clearInterval(timer);
+    } else {
+      // Auth mode: use store + WebSocket
       fetchTodayQueue(selectedDoctorId);
-    }, 10000);
 
-    return () => clearInterval(singleInterval);
-  }, [selectedDoctorId, viewMode]);
+      let socket: any = null;
+      try {
+        const socketUrl = (import.meta.env.VITE_NODE_WS_URL || 'https://ws.ferozamedicinecorner.com').trim();
+        socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+        socket.on('queue-created', () => fetchTodayQueue(selectedDoctorId));
+        socket.on('queue-updated', (payload: any) => {
+          fetchTodayQueue(selectedDoctorId);
+          if (payload?.status === 'Called' && payload?.serial_no) speakAnnouncement(payload.serial_no);
+        });
+      } catch { /* socket.io-client fallback */ }
+
+      return () => { if (socket) socket.disconnect(); };
+    }
+  }, [selectedDoctorId, viewMode, isPublicView]);
 
   useEffect(() => {
-    if (!queueDay?.id || viewMode !== 'single') return;
+    if (isPublicView || !queueDay?.id || viewMode !== 'single') return;
     subscribeToQueue(queueDay.id);
-  }, [queueDay?.id, viewMode]);
+  }, [queueDay?.id, viewMode, isPublicView]);
 
 
   const activeItem = items.find((i) => i.status === 'Called');

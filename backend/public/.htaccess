@@ -3,21 +3,13 @@
         Options -MultiViews -Indexes
     </IfModule>
 
-    # ── Fast CORS Preflight Handling (OPTIONS) ───────────────────────
-    RewriteCond %{REQUEST_METHOD} OPTIONS
-    RewriteRule ^(.*)$ $1 [R=200,L]
-    Header always set Access-Control-Allow-Origin "https://serial.ferozamedicinecorner.com"
-    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN"
-    Header always set Access-Control-Allow-Credentials "true"
-
+    RewriteEngine On
 
     # ── Handle Authorization Header ───────────────────────────────────
     # Some shared hosts strip the Authorization header. This rewrite
     # passes it through as an environment variable that Laravel reads.
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
 
     # ── Handle X-XSRF-Token Header ────────────────────────────────────
     RewriteCond %{HTTP:x-xsrf-token} .
@@ -34,13 +26,15 @@
     RewriteCond %{HTTP:Upgrade} =websocket [NC]
     RewriteRule ^app/(.*) ws://127.0.0.1:8080/app/$1 [P,L]
 
-
     # ── Remove trailing slashes ───────────────────────────────────────
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # ── Route to Laravel front controller ─────────────────────────────
+    # ── Route ALL requests (including OPTIONS) to Laravel ─────────────
+    # Laravel's HandleCors middleware handles OPTIONS preflights correctly.
+    # Do NOT intercept OPTIONS here — let PHP handle it so that CORS
+    # headers from config/cors.php are included in the response.
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
@@ -48,15 +42,10 @@
 
 # ── Security Headers ─────────────────────────────────────────────────
 # Applied at Apache level as a belt-and-suspenders measure.
-# Laravel's SecurityHeaders middleware also sets these, but Apache
-# headers are set even before PHP runs (e.g., for 40x errors).
+# NOTE: CORS headers are intentionally NOT set here — they are handled
+# by Laravel's HandleCors middleware (config/cors.php) to avoid
+# duplicate/conflicting headers that cause ERR_FAILED errors.
 <IfModule mod_headers.c>
-    # ── Handle CORS Preflight (OPTIONS) & Allowed Origin ─────────────
-    Header always set Access-Control-Allow-Origin "https://serial.ferozamedicinecorner.com"
-    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN"
-    Header always set Access-Control-Allow-Credentials "true"
-
     # Prevent MIME type sniffing
     Header always set X-Content-Type-Options "nosniff"
 
@@ -66,7 +55,6 @@
     # Legacy XSS filter
     Header always set X-XSS-Protection "1; mode=block"
 
-
     # Limit referrer information sent to third parties
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 
@@ -74,8 +62,6 @@
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
 
     # HSTS — 1 year; tells browsers to always use HTTPS for this domain
-    # Only uncomment after verifying SSL is permanently enabled.
-    # WARNING: Once set, you cannot easily go back to HTTP for 1 year.
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
     # Remove server version from response headers (information disclosure)
@@ -85,7 +71,7 @@
 
 # ── Block Access to Sensitive Files ──────────────────────────────────
 # Prevents direct access to .env, .git, composer files, etc.
-<FilesMatch "^\.">
+<FilesMatch "^\\.">
     Order allow,deny
     Deny from all
 </FilesMatch>

@@ -28,6 +28,11 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:60,1')
         ->name('public.doctors');
 
+    // Public queue view: read-only for TV display — 60/min per IP
+    Route::get('/public/queue', [QueueController::class, 'publicQueue'])
+        ->middleware('throttle:60,1')
+        ->name('public.queue');
+
     // Public book: 20/min per IP — prevents automated queue flooding
     // and patient record spam from bots.
     Route::post('/public/book', [QueueController::class, 'publicBook'])

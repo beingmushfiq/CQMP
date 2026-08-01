@@ -11,6 +11,7 @@ use App\Events\QueueResumed;
 use App\Events\QueueUpdated;
 use App\Events\QueueOpened;
 use App\Events\QueueDeleted;
+use App\Helpers\NodeBroadcaster;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\QueueDay;
@@ -90,6 +91,7 @@ class QueueEngine
 
             $item->load(['patient', 'queueDay']);
             rescue(fn() => broadcast(new QueueCreated($item)), report: false);
+            NodeBroadcaster::broadcast('queue-created', $item);
 
             return $item;
         });
@@ -122,6 +124,7 @@ class QueueEngine
 
             $nextItem->load(['patient', 'queueDay']);
             rescue(fn() => broadcast(new QueueUpdated($nextItem)), report: false);
+            NodeBroadcaster::broadcast('queue-updated', $nextItem);
 
             return $nextItem;
         });

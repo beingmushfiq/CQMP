@@ -257,6 +257,52 @@ class QueueController extends Controller
     }
 
     /**
+     * GET /api/v1/public/queue?doctor_id=1
+     * Read-only queue view — no auth required.
+     * Used by the TV display when accessed without a staff login.
+     * Only exposes display-safe fields: serial_no, status, patient name.
+     */
+    public function publicQueue(Request $request): JsonResponse
+    {
+        $request->validate(['doctor_id' => ['required', 'exists:doctors,id']]);
+
+        $queueDay = QueueDay::where('doctor_id', $request->doctor_id)
+            ->where('date', '>=', Carbon::today()->startOfDay())
+            ->where('date', '<=', Carbon::today()->endOfDay())
+            ->latest()
+            ->first();
+
+        if (! $queueDay) {
+            return response()->json(['queue_day' => null, 'items' => []]);
+        }
+
+        $items = $queueDay->items()
+            ->with('patient:id,name')
+            ->whereIn('status', ['Waiting', 'Called'])
+            ->orderBy('serial_no')
+            ->get()
+            ->map(fn($item) => [
+                'id'             => $item->id,
+                'serial_no'      => $item->serial_no,
+                'status'         => $item->status,
+                'priority'       => $item->priority,
+                'estimated_wait' => $item->estimated_wait,
+                'called_at'      => $item->called_at?->toIso8601String(),
+                'patient'        => ['id' => $item->patient->id, 'name' => $item->patient->name],
+            ]);
+
+        return response()->json([
+            'queue_day' => [
+                'id'        => $queueDay->id,
+                'status'    => $queueDay->status,
+                'date'      => Carbon::parse($queueDay->date)->toDateString(),
+                'opened_at' => $queueDay->opened_at?->toIso8601String(),
+            ],
+            'items' => $items,
+        ]);
+    }
+
+    /**
      * POST /api/v1/public/book
      * Visitor self-booking — no auth required.
      */

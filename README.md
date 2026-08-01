@@ -46,6 +46,8 @@
 
 Built on **Laravel 13** + **Laravel Reverb** (WebSockets) on the backend, and **React 19** + **Zustand** + **TypeScript** on the frontend, the system delivers sub-second queue updates to all connected screens simultaneously.
 
+Authentication uses a **custom JWT implementation** (`JwtService` + `JwtMiddleware`) for stateless, cookie-free token auth — ideal for shared-hosting deployments where Sanctum sessions are impractical.
+
 ---
 
 ## ✨ Key Features
@@ -58,7 +60,7 @@ Built on **Laravel 13** + **Laravel Reverb** (WebSockets) on the backend, and **
 | 🖨️ **Thermal Slip Printing** | One-click print of a formatted receipt with serial and estimated wait |
 | ⏸️ **Queue Freeze / Resume** | Pause walk-in registrations while keeping the existing queue intact |
 | ⏱️ **Estimated Wait Times** | Auto-calculated from average consultation time + doctor delay |
-| 📺 **TV Display Mode** | Full-screen patient-facing display showing live serial numbers |
+| 📺 **TV Display Mode** | Full-screen patient-facing display — accessible at `/tv` without login |
 | 🔒 **Role-Based Access** | Doctor, Receptionist, and Admin roles via Spatie Permission |
 | 📋 **Audit Trail** | Every action (call, complete, skip, emergency, reinsert, delete) is logged |
 | 🌙 **Dark / Light Mode** | System-aware theme with instant toggle, persisted to `localStorage` |
@@ -79,7 +81,7 @@ Built on **Laravel 13** + **Laravel Reverb** (WebSockets) on the backend, and **
 | **PHP** | 8.3+ | Runtime |
 | **Laravel** | 13.x | Application framework |
 | **Laravel Reverb** | 1.x | Native WebSocket server |
-| **Laravel Sanctum** | 4.x | API token authentication |
+| **Custom JWT** | — | Stateless API token auth (`JwtService` + `JwtMiddleware`) |
 | **Laravel Filament** | 5.x | Admin panel UI |
 | **Spatie Permission** | 8.x | Role & permission management |
 | **SQLite / MySQL** | — | Database (SQLite by default in dev) |
@@ -121,10 +123,63 @@ Built on **Laravel 13** + **Laravel Reverb** (WebSockets) on the backend, and **
 │  State (Zustand│  DELETE /queue/:id        │  ├─ QueueCompleted       │
 │  stores)       │  POST  /doctor/delay      │  ├─ QueueDeleted         │
 │  ├─ useQueue   │                           │  ├─ EmergencyInserted     │
-│  ├─ useAuth    │  Admin Panel:             │  ├─ QueueFrozen          │
-│  └─ useTheme   │  /admin  (Filament)       │  ├─ QueueResumed         │
-│                │                           │  └─ EstimatedTimeUpdated │
+│  ├─ useAuth    │  Public (no auth):        │  ├─ QueueFrozen          │
+│  └─ useTheme   │  GET  /public/doctors     │  ├─ QueueResumed         │
+│                │  GET  /public/queue       │  └─ EstimatedTimeUpdated │
+│                │  POST /public/book        │                          │
+│                │                           │                          │
+│                │  Admin Panel:             │                          │
+│                │  /admin  (Filament)       │                          │
 └────────────────┴───────────────────────────┴──────────────────────────┘
+```
+
+### Authentication Flow (JWT)
+
+```
+Staff Login: POST /api/v1/login  { email, password }
+          │
+          ▼
+AuthController validates credentials
+          │
+          ▼
+JwtService::generate()  →  signed JWT (HS256, 8-hour TTL)
+          │
+          ▼
+Token returned in JSON  →  stored in localStorage ('cqmp_token')
+          │
+          ▼
+All protected requests:  Authorization: Bearer {token}
+          │
+          ▼
+JwtMiddleware::handle()  →  validates signature + expiry
+```
+
+### TV Display — Public Mode vs Auth Mode
+
+```
+Unauthenticated visitor navigates to /tv
+          │
+          ▼
+TvDisplay detects isPublicView = true (no cqmp_token in localStorage)
+          │
+          ▼
+Uses publicApi → GET /api/v1/public/queue?doctor_id=N  (no auth)
+          │  Polls every 10 seconds (WebSocket requires auth)
+          ▼
+Queue displayed: currently called serial + waiting list
+
+─────────────────────────────────────────────────────
+
+Authenticated TV staff opens /tv
+          │
+          ▼
+TvDisplay detects isPublicView = false (token present)
+          │
+          ▼
+Uses authenticated api → GET /api/v1/queue/today?doctor_id=N
+          │  + WebSocket (Echo/Reverb) for real-time push
+          ▼
+Queue displayed with instant WebSocket updates
 ```
 
 ### Request Flow (Walk-in Registration)
@@ -180,10 +235,14 @@ Clinic Queue Management Platform (CQMP)/
 │   │   │   ├── Patients/
 │   │   │   └── Appointments/
 │   │   │
-│   │   ├── Http/Controllers/Api/
-│   │   │   ├── AuthController.php        # Login / logout / me
-│   │   │   ├── PatientController.php     # Patient CRUD (phone optional)
-│   │   │   └── QueueController.php       # All queue operations + public booking
+│   │   ├── Http/
+│   │   │   ├── Controllers/Api/
+│   │   │   │   ├── AuthController.php        # Login / logout / me
+│   │   │   │   ├── PatientController.php     # Patient CRUD (phone optional)
+│   │   │   │   └── QueueController.php       # All queue ops + public endpoints
+│   │   │   │
+│   │   │   └── Middleware/
+│   │   │       └── JwtMiddleware.php         # Custom JWT auth guard
 │   │   │
 │   │   ├── Models/                       # 11 Eloquent models
 │   │   │   ├── Clinic.php
@@ -200,6 +259,7 @@ Clinic Queue Management Platform (CQMP)/
 │   │   │
 │   │   └── Services/
 │   │       ├── QueueEngine.php           # Core queue business logic
+│   │       ├── JwtService.php            # JWT sign / verify (HS256)
 │   │       └── AuditService.php          # Action audit logging
 │   │
 │   ├── database/migrations/              # 16 migrations
@@ -217,22 +277,21 @@ Clinic Queue Management Platform (CQMP)/
     │
     └── src/
         ├── components/
-        │   ├── LoginForm.tsx             # Auth screen with branded logo
+        │   ├── LoginForm.tsx             # Booking portal + staff login modal
         │   ├── ReceptionistDashboard.tsx # Patient registration + queue management
         │   ├── DoctorDashboard.tsx       # Doctor's call / complete / skip panel
-        │   ├── TvDisplay.tsx             # Public-facing live TV board
-        │   └── VisitorBooking.tsx        # Self-service booking (no login, name only)
+        │   └── TvDisplay.tsx             # Public-facing live TV board
         │
         ├── hooks/
         │   └── useKeyboardShortcut.ts   # Global hotkey system (auto-disabled in inputs)
         │
         ├── store/
         │   ├── useQueueStore.ts         # Queue state + WebSocket subscriptions
-        │   ├── useAuthStore.ts          # Auth token + user state
+        │   ├── useAuthStore.ts          # JWT token + user state
         │   └── useThemeStore.ts         # Dark / light theme
         │
         └── utils/
-            ├── api.ts                   # Axios instance + Bearer token interceptor
+            ├── api.ts                   # Axios: auth instance + public instance
             └── echo.ts                  # Laravel Echo + Reverb WebSocket config
 ```
 
@@ -280,7 +339,7 @@ announcements
 
 ## ⚡ Real-time Events (WebSocket)
 
-All events are broadcast over **Laravel Reverb** and received by **Laravel Echo** on the frontend.
+All events are broadcast over **Laravel Reverb** and received by **Laravel Echo** on the frontend. The TV display uses **10-second polling** when accessed without a staff login (WebSocket channels require authentication).
 
 | Event | Channel | Key Payload | Trigger |
 |---|---|---|---|
@@ -303,8 +362,8 @@ All routes are prefixed `/api/v1`. Protected routes require `Authorization: Bear
 ### Authentication
 
 ```http
-POST   /api/v1/login              Body: { email, password }
-POST   /api/v1/logout             Revokes current Sanctum token
+POST   /api/v1/login              Body: { email, password }  → { token, user }
+POST   /api/v1/logout             Invalidates current JWT
 GET    /api/v1/me                 Returns current user profile
 ```
 
@@ -318,7 +377,7 @@ PUT    /api/v1/patients/{id}
 DELETE /api/v1/patients/{id}
 ```
 
-### Queue Operations
+### Queue Operations *(require auth)*
 
 ```http
 GET    /api/v1/queue/today        ?doctor_id=1 → { queue_day, items[] }
@@ -334,18 +393,22 @@ POST   /api/v1/queue/resume       { queue_day_id }
 DELETE /api/v1/queue/{queueItem}
 ```
 
-### Doctor Panel
+### Doctor Panel *(require auth)*
 
 ```http
 POST   /api/v1/doctor/delay       { doctor_id, delay_minutes, reason }
 ```
 
-### Public (No Auth Required)
+### Public — No Auth Required
 
 ```http
-GET    /api/v1/public/doctors     List of available doctors
-POST   /api/v1/public/book        { name, phone?, doctor_id }  — self-booking
+GET    /api/v1/public/doctors     List of available doctors (cached 60 s)
+GET    /api/v1/public/queue       ?doctor_id=1  →  read-only queue for TV display
+POST   /api/v1/public/book        { name, phone?, doctor_id }  — visitor self-booking
+GET    /api/v1/settings/public    Clinic display settings (title, logo, etc.)
 ```
+
+> **TV Display** uses `GET /public/queue` when accessed without login. This endpoint returns only display-safe fields: `serial_no`, `status`, `priority`, `estimated_wait`, and patient `name`. Phone numbers and internal IDs are not exposed.
 
 ---
 
@@ -371,19 +434,23 @@ POST   /api/v1/public/book        { name, phone?, doctor_id }  — self-booking
 - Log a **delay** in minutes — all waiting patient wait times update immediately
 - View the full waiting list with live estimated times
 
-### 📺 TV Display
+### 📺 TV Display (`/tv`)
 
-- No login required — publicly accessible
+- Accessible at `/tv` — **no login required**
+- Navigate to it directly in the browser; no button on the booking portal
 - Full-screen animated board showing the current serial number being called
-- Doctor name, clinic name, and waiting count visible at a glance
-- Designed for a wall-mounted screen in the waiting room
+- **Single-doctor mode**: select a doctor to watch one queue
+- **Lobby mode**: see all doctors' queues side-by-side
+- Bilingual voice announcement (Bangla + English) when a serial is called
+- When accessed without login: polls `GET /public/queue` every 10 seconds
+- When accessed with a staff token: uses WebSocket (Reverb) for instant updates
 
 ### 🌐 Visitor Self-Booking
 
-- No login required — accessed from the portal home screen
+- No login required — main screen of the portal (`/`)
 - Patient enters their **name** only (phone is optional)
 - Selects a doctor and receives a serial number on screen
-- Informs the patient to monitor the TV display for their turn
+- Can download a token image for reference
 
 ### 🔧 Admin Panel (Filament)
 
@@ -538,8 +605,9 @@ npm run dev
 
 | URL | Description |
 |---|---|
-| `http://localhost:5173` | React SPA (main app) |
-| `http://localhost:5173/tv` | TV Display (public, no login) |
+| `http://localhost:5173` | React SPA — visitor booking portal |
+| `http://localhost:5173/tv` | TV Display (public, no login required) |
+| `http://localhost:5173/login` | Staff login page |
 | `http://localhost:8000/api/v1` | REST API base |
 | `ws://localhost:8080` | WebSocket server (Reverb) |
 | `http://localhost:8000/admin` | Filament Admin Panel |
@@ -567,6 +635,9 @@ APP_NAME="Clinic Queue Management Platform"
 APP_ENV=local
 APP_URL=http://localhost:8000
 
+# CORS — allow the frontend origin
+FRONTEND_URL=http://localhost:5173
+
 # Database — SQLite (default) or switch to MySQL
 DB_CONNECTION=sqlite
 # DB_HOST=127.0.0.1
@@ -574,6 +645,10 @@ DB_CONNECTION=sqlite
 # DB_DATABASE=cqmp
 # DB_USERNAME=root
 # DB_PASSWORD=secret
+
+# JWT authentication
+JWT_SECRET=your-256-bit-secret-here
+JWT_TTL=480   # Token lifetime in minutes (default: 8 hours)
 
 # WebSocket via Laravel Reverb
 BROADCAST_CONNECTION=reverb
@@ -590,6 +665,44 @@ VITE_REVERB_HOST="${REVERB_HOST}"
 VITE_REVERB_PORT="${REVERB_PORT}"
 VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 ```
+
+### Frontend (`frontend/.env`)
+
+```env
+VITE_API_URL=http://localhost:8000/api/v1
+VITE_REVERB_APP_KEY=cqmp-reverb-key
+VITE_REVERB_HOST=127.0.0.1
+VITE_REVERB_PORT=8080
+VITE_REVERB_SCHEME=http
+```
+
+---
+
+## 🔐 Authentication
+
+CQMP uses a **custom HS256 JWT implementation** instead of Laravel Sanctum. This was chosen for shared-hosting compatibility — no session cookies, no database token table queries on every request.
+
+### How it works
+
+| Step | Detail |
+|---|---|
+| **Login** | `POST /api/v1/login` returns a signed JWT |
+| **Storage** | Token stored in `localStorage` as `cqmp_token` |
+| **Transport** | Sent as `Authorization: Bearer {token}` on every protected request |
+| **Validation** | `JwtMiddleware` verifies signature and expiry on each request |
+| **Expiry** | 8 hours by default (configurable via `JWT_TTL`) |
+| **Logout** | Token is discarded client-side; no server-side revocation needed |
+
+### API clients (`frontend/src/utils/api.ts`)
+
+The frontend maintains **two separate Axios instances**:
+
+```
+api          → includes Bearer token, used for all staff/authenticated routes
+publicApi    → no token, used for /public/* endpoints and TV display
+```
+
+The `api` instance has a 401 interceptor that clears the token and redirects to `/`. **The redirect is suppressed when on the `/tv` route**, so the TV display remains visible even if a session expires.
 
 ---
 

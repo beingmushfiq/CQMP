@@ -65,10 +65,13 @@ export const getStorageBaseUrl = (): string => {
 export const createPublicApi = () =>
   axios.create({
     baseURL: getApiBaseUrl(),
+    timeout: 15_000,
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
+    // Required when server sends Access-Control-Allow-Credentials: true
+    withCredentials: true,
   });
 
 // ── Authenticated Axios singleton ──────────────────────────────────────
@@ -122,8 +125,11 @@ api.interceptors.response.use(
 
     if (status === 401) {
       // Token expired or invalid — clear local state and redirect to login.
+      // Do NOT redirect if on /tv — the TV display is a public panel and
+      // should remain visible even without an authenticated session.
+      const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
       localStorage.removeItem('cqmp_token');
-      if (!window.location.pathname.includes('/login')) {
+      if (path !== '/tv' && !path.includes('/login')) {
         window.location.href = '/';
       }
     }
