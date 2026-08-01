@@ -51,10 +51,10 @@ function App() {
   useEffect(() => {
     if (token) {
       fetchUser();
-    } else {
+    } else if (pathname.toLowerCase().replace(/\/$/, '') !== '/tv') {
       setCurrentView('login');
     }
-  }, [token]);
+  }, [token, pathname]);
 
   useEffect(() => {
     if (user?.roles?.length) {

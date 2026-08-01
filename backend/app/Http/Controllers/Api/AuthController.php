@@ -33,7 +33,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = $user->createToken('cqmp-token', $user->getRoleNames()->toArray())->plainTextToken;
+        $token = \App\Services\JwtService::generateToken($user);
 
         return response()->json([
             'token' => $token,
@@ -43,15 +43,10 @@ class AuthController extends Controller
 
     /**
      * POST /api/v1/logout
-     * Revoke only the current token — preserves other active sessions
-     * (e.g., receptionist logged in on multiple devices).
+     * Stateless logout acknowledgment.
      */
     public function logout(Request $request): JsonResponse
     {
-        // Delete only the token used in this request.
-        // Avoids logging out the same user from all devices simultaneously.
-        $request->user()?->currentAccessToken()->delete();
-
         return response()->json(['message' => 'Logged out successfully.']);
     }
 

@@ -54,7 +54,7 @@ class QueueApiTest extends TestCase
 
     public function test_can_retrieve_authenticated_user(): void
     {
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->getJson('/api/v1/me');
 
         $response->assertOk()->assertJsonPath('data.name', $this->admin->name);
@@ -62,9 +62,7 @@ class QueueApiTest extends TestCase
 
     public function test_can_logout(): void
     {
-        $token = $this->admin->createToken('test-token')->plainTextToken;
-
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->actingAsJwt($this->admin)
              ->postJson('/api/v1/logout')
              ->assertOk();
     }
@@ -76,7 +74,7 @@ class QueueApiTest extends TestCase
         $clinic = Clinic::factory()->create();
         $doctor = Doctor::factory()->create(['clinic_id' => $clinic->id]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/open', ['doctor_id' => $doctor->id]);
 
         $response->assertOk()->assertJsonStructure(['queue_day_id', 'status']);
@@ -94,7 +92,7 @@ class QueueApiTest extends TestCase
             'status'    => 'opened',
         ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/create', [
                              'queue_day_id' => $queueDay->id,
                              'patient_id'   => $patient->id,
@@ -119,9 +117,9 @@ class QueueApiTest extends TestCase
         $p1 = Patient::factory()->create();
         $p2 = Patient::factory()->create();
 
-        $r1 = $this->actingAs($this->admin, 'sanctum')
+        $r1 = $this->actingAsJwt($this->admin)
                    ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p1->id]);
-        $r2 = $this->actingAs($this->admin, 'sanctum')
+        $r2 = $this->actingAsJwt($this->admin)
                    ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p2->id]);
 
         $r1->assertCreated();
@@ -143,10 +141,10 @@ class QueueApiTest extends TestCase
             'status'    => 'opened',
         ]);
 
-        $this->actingAs($this->admin, 'sanctum')
+        $this->actingAsJwt($this->admin)
              ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/call-next', ['queue_day_id' => $queueDay->id]);
 
         $response->assertOk();
@@ -165,7 +163,7 @@ class QueueApiTest extends TestCase
             'status'    => 'opened',
         ]);
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/create', [
                              'queue_day_id' => $queueDay->id,
                              'patient_id'   => $patient->id,
@@ -187,16 +185,16 @@ class QueueApiTest extends TestCase
         $p1 = Patient::factory()->create();
         $p2 = Patient::factory()->create();
 
-        $item1 = $this->actingAs($this->admin, 'sanctum')
+        $item1 = $this->actingAsJwt($this->admin)
                      ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p1->id])
                      ->json('data');
 
-        $item2 = $this->actingAs($this->admin, 'sanctum')
+        $item2 = $this->actingAsJwt($this->admin)
                      ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p2->id])
                      ->json('data');
 
         // Let's reinsert item 2 at position 1
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/reinsert', [
                              'queue_item_id' => $item2['id'],
                              'position'      => 1,
@@ -219,11 +217,11 @@ class QueueApiTest extends TestCase
         ]);
         $patient = Patient::factory()->create();
 
-        $item = $this->actingAs($this->admin, 'sanctum')
+        $item = $this->actingAsJwt($this->admin)
                      ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id])
                      ->json('data');
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/complete', [
                              'queue_item_id' => $item['id'],
                          ]);
@@ -244,12 +242,12 @@ class QueueApiTest extends TestCase
         ]);
         $patient = Patient::factory()->create();
 
-        $item = $this->actingAs($this->admin, 'sanctum')
+        $item = $this->actingAsJwt($this->admin)
                      ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id])
                      ->json('data');
 
         // Complete the only item in queue (recalculateWaitTimes will encounter empty waiting collection)
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/complete', [
                              'queue_item_id' => $item['id'],
                          ]);
@@ -270,11 +268,11 @@ class QueueApiTest extends TestCase
         ]);
         $patient = Patient::factory()->create();
 
-        $item = $this->actingAs($this->admin, 'sanctum')
+        $item = $this->actingAsJwt($this->admin)
                      ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $patient->id])
                      ->json('data');
 
-        $response = $this->actingAs($this->admin, 'sanctum')
+        $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/skip', [
                              'queue_item_id' => $item['id'],
                          ]);

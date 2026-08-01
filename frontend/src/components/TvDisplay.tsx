@@ -136,12 +136,19 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   useEffect(() => {
     if (!selectedDoctorId || viewMode !== 'single') return;
     fetchTodayQueue(selectedDoctorId);
+
+    const singleInterval = setInterval(() => {
+      fetchTodayQueue(selectedDoctorId);
+    }, 10000);
+
+    return () => clearInterval(singleInterval);
   }, [selectedDoctorId, viewMode]);
 
   useEffect(() => {
     if (!queueDay?.id || viewMode !== 'single') return;
     subscribeToQueue(queueDay.id);
   }, [queueDay?.id, viewMode]);
+
 
   const activeItem = items.find((i) => i.status === 'Called');
 

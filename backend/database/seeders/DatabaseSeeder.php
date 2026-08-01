@@ -24,43 +24,52 @@ class DatabaseSeeder extends Seeder
         Role::firstOrCreate(['name' => 'Patient']);
 
         // Create super admin user
-        $admin = User::create([
-            'name'              => 'Super Admin',
-            'email'             => 'admin@gmail.com',
-            'email_verified_at' => now(),
-            'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name'              => 'Super Admin',
+                'email_verified_at' => now(),
+                'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
+            ]
+        );
         $admin->assignRole($superAdmin);
 
         // Create Doctor user
         $docRole = Role::firstOrCreate(['name' => 'Doctor']);
-        $doctorUser = User::create([
-            'name'              => 'Doctor',
-            'email'             => 'doctor@gmail.com',
-            'email_verified_at' => now(),
-            'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
-        ]);
+        $doctorUser = User::firstOrCreate(
+            ['email' => 'doctor@gmail.com'],
+            [
+                'name'              => 'Doctor',
+                'email_verified_at' => now(),
+                'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
+            ]
+        );
         $doctorUser->assignRole($docRole);
 
         // Create Receptionist user
         $recRole = Role::firstOrCreate(['name' => 'Receptionist']);
-        $receptionistUser = User::create([
-            'name'              => 'Receptionist',
-            'email'             => 'receptionist@gmail.com',
-            'email_verified_at' => now(),
-            'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
-        ]);
+        $receptionistUser = User::firstOrCreate(
+            ['email' => 'receptionist@gmail.com'],
+            [
+                'name'              => 'Receptionist',
+                'email_verified_at' => now(),
+                'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
+            ]
+        );
         $receptionistUser->assignRole($recRole);
 
         // Create TV user
         $tvRole = Role::firstOrCreate(['name' => 'TV']);
-        $tvUser = User::create([
-            'name'              => 'TV',
-            'email'             => 'tv@gmail.com',
-            'email_verified_at' => now(),
-            'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
-        ]);
+        $tvUser = User::firstOrCreate(
+            ['email' => 'tv@gmail.com'],
+            [
+                'name'              => 'TV',
+                'email_verified_at' => now(),
+                'password'          => \Illuminate\Support\Facades\Hash::make('12345678'),
+            ]
+        );
         $tvUser->assignRole($tvRole);
+
 
         // Create demo clinic
         $clinic = Clinic::create([

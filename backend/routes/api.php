@@ -37,9 +37,9 @@ Route::prefix('v1')->group(function () {
     // ── Public: Settings (no auth) ────────────────────────────────────
     Route::get('/settings/public', [SettingsController::class, 'publicSettings'])->name('settings.public');
 
-    // ── Protected: Require Sanctum token ──────────────────────────────
+    // ── Protected: Require JWT token ───────────────────────────────────
     // Global throttle of 120 requests/minute for authenticated users.
-    Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
+    Route::middleware([\App\Http\Middleware\JwtMiddleware::class, 'throttle:120,1'])->group(function () {
 
         // Auth
         Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
