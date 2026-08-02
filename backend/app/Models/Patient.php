@@ -32,4 +32,9 @@ class Patient extends Model
     {
         return $this->hasMany(QueueItem::class);
     }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import api, { getStorageBaseUrl } from '../utils/api';
-import { Save, Upload, Check, AlertCircle, Settings, Building2, User } from 'lucide-react';
+import { Save, Upload, Check, AlertCircle, Settings, Building2, User, Calendar } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { settings, fetchSettings, updateSettings, get } = useSettingsStore();
@@ -212,6 +212,64 @@ export const SettingsPage: React.FC = () => {
             placeholder={t('settings.tv.footer.placeholder')}
             rows={4}
           />
+        </div>
+      </div>
+
+      {/* Booking System Configuration */}
+      <div className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 sm:p-8 space-y-6 shadow-premium">
+        <h2 className="flex items-center gap-2.5 text-base font-bold text-slate-800 dark:text-white">
+          <Calendar className="w-5 h-5 text-indigo-500" /> Booking System Settings
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Max Bookings Per Day</label>
+            <input
+              type="number"
+              min={1}
+              max={200}
+              value={form.booking_max_per_day || '50'}
+              onChange={(e) => update('booking_max_per_day', e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Booking Cutoff Time (24h)</label>
+            <input
+              type="time"
+              value={form.booking_cutoff_time || '22:00'}
+              onChange={(e) => update('booking_cutoff_time', e.target.value)}
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Auto-Confirm Bookings</label>
+            <select
+              value={form.booking_auto_confirm || 'false'}
+              onChange={(e) => update('booking_auto_confirm', e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white"
+            >
+              <option value="true">Enabled (Auto-Confirm)</option>
+              <option value="false">Disabled (Requires Reception Approval)</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Late Arrival Policy</label>
+            <select
+              value={form.booking_late_policy || 'move_to_end'}
+              onChange={(e) => update('booking_late_policy', e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white"
+            >
+              <option value="keep_serial">Keep Original Serial</option>
+              <option value="move_to_end">Move to End of Queue</option>
+              <option value="skip">Skip Patient</option>
+            </select>
+          </div>
         </div>
       </div>
 

@@ -10,11 +10,11 @@ import { UserProfile } from './UserProfile';
 import { ErrorLogModal } from './ErrorLogModal';
 import {
   Sun, Moon, LogOut, Search, Bug,
-  LayoutDashboard, Stethoscope, Monitor, Settings,
+  LayoutDashboard, Stethoscope, Monitor, Settings, Calendar,
   ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 
-export type TabId = 'dashboard' | 'reception' | 'doctor' | 'tv' | 'settings';
+export type TabId = 'dashboard' | 'reception' | 'bookings' | 'doctor' | 'tv' | 'settings';
 
 interface NavItem {
   id: TabId;
@@ -27,15 +27,16 @@ interface NavItem {
 const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', labelKey: 'nav.dashboard', label: 'Dashboard',     icon: <LayoutDashboard className="w-5 h-5" /> },
   { id: 'reception', labelKey: 'nav.reception', label: 'Reception Desk', icon: <LayoutDashboard className="w-5 h-5" /> },
+  { id: 'bookings',  labelKey: 'nav.bookings',  label: 'Bookings',       icon: <Calendar className="w-5 h-5" /> },
   { id: 'doctor',    labelKey: 'nav.doctor',    label: 'Doctor Chamber', icon: <Stethoscope className="w-5 h-5" /> },
   { id: 'tv',        labelKey: 'nav.tv',        label: 'TV Display',     icon: <Monitor className="w-5 h-5" /> },
   { id: 'settings',  labelKey: 'nav.settings',  label: 'Settings',       icon: <Settings className="w-5 h-5" /> },
 ];
 
 const ROLE_NAV_MAP: Record<string, TabId[]> = {
-  'Super Admin': ['dashboard', 'reception', 'doctor', 'tv', 'settings'],
-  Admin: ['dashboard', 'reception', 'doctor', 'tv'],
-  Receptionist: ['dashboard', 'reception'],
+  'Super Admin': ['dashboard', 'reception', 'bookings', 'doctor', 'tv', 'settings'],
+  Admin: ['dashboard', 'reception', 'bookings', 'doctor', 'tv'],
+  Receptionist: ['dashboard', 'reception', 'bookings'],
   Doctor: ['dashboard', 'doctor'],
   TV: ['dashboard', 'tv'],
 };

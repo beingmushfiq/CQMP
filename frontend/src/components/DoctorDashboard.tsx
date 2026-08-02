@@ -194,6 +194,24 @@ export const DoctorDashboard: React.FC = () => {
                 </button>
               </motion.div>
 
+              {/* Tomorrow Bookings Quick Overview (Read-Only) */}
+              <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-xl space-y-3 shadow-premium">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                    <Calendar className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                    Tomorrow's Bookings
+                  </h2>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                    Read-Only
+                  </span>
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-[10px]">Expected patient reservations for tomorrow</p>
+                <div className="pt-1 flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span>Reserved Serials:</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">Auto-converts on Open</span>
+                </div>
+              </motion.div>
+
               {/* Doctor Delay */}
               <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-xl space-y-3 shadow-premium">
                 <h2 className="text-xs font-bold flex items-center gap-2 text-slate-900 dark:text-white">

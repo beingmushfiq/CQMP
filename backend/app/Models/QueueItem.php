@@ -39,4 +39,9 @@ class QueueItem extends Model
     {
         return $this->belongsTo(Patient::class);
     }
+
+    public function booking(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class);
+    }
 }

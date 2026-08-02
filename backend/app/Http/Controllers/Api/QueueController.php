@@ -20,7 +20,8 @@ class QueueController extends Controller
 {
     public function __construct(
         private readonly QueueEngine $queue,
-        private readonly AuditService $audit
+        private readonly AuditService $audit,
+        private readonly \App\Services\BookingConversionService $bookingConversion
     ) {}
 
     /**
@@ -61,9 +62,18 @@ class QueueController extends Controller
     {
         $request->validate(['doctor_id' => ['required', 'exists:doctors,id']]);
         $doctor   = Doctor::findOrFail($request->doctor_id);
-        $queueDay = $this->queue->openQueue($doctor, Carbon::today()->toDateString());
-        $this->audit->log('queue.opened', targetPatientId: null, details: "Doctor: {$doctor->name}", request: $request);
-        return response()->json(['queue_day_id' => $queueDay->id, 'status' => $queueDay->status]);
+        $todayStr = Carbon::today()->toDateString();
+        $queueDay = $this->queue->openQueue($doctor, $todayStr);
+
+        // Auto-convert any confirmed bookings for today into queue items
+        $convertedCount = $this->bookingConversion->convertForDate($todayStr, $queueDay, $request->user());
+
+        $this->audit->log('queue.opened', targetPatientId: null, details: "Doctor: {$doctor->name}. Converted bookings: {$convertedCount}", request: $request);
+        return response()->json([
+            'queue_day_id'      => $queueDay->id,
+            'status'            => $queueDay->status,
+            'converted_bookings' => $convertedCount,
+        ]);
     }
 
     /**

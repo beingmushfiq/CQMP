@@ -8,6 +8,8 @@ import { DisplayPreviewLayout } from './components/DisplayPreviewLayout';
 import { Layout, type TabId } from './components/Layout';
 import { SettingsPage } from './components/SettingsPage';
 import { Dashboard } from './components/Dashboard';
+import { BookingManagement } from './pages/BookingManagement';
+import { PublicBookingPage } from './pages/PublicBookingPage';
 import { useSettingsStore } from './store/useSettingsStore';
 
 type View = 'loading' | 'login' | 'doctor' | 'receptionist' | 'tv' | 'display-fullscreen';
@@ -79,6 +81,11 @@ function App() {
 
   const cleanPath = pathname.toLowerCase().replace(/\/$/, '');
 
+  // Public Booking page route (/book)
+  if (cleanPath === '/book') {
+    return <PublicBookingPage />;
+  }
+
   // Redirect legacy /tv → /display immediately (no flash)
   if (cleanPath === '/tv') {
     window.location.replace('/display');
@@ -125,6 +132,7 @@ function App() {
       <Layout activeTab={activeTab} onTabChange={handleTabChange}>
         {activeTab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
         {activeTab === 'reception' && <ReceptionistDashboard />}
+        {activeTab === 'bookings' && <BookingManagement />}
         {activeTab === 'doctor' && <DoctorDashboard />}
         {activeTab === 'tv' && <DisplayPreviewLayout onTabChange={handleTabChange} />}
         {activeTab === 'settings' && <SettingsPage />}
