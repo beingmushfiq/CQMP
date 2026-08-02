@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import api, { getStorageBaseUrl } from '../utils/api';
-import { Save, Upload, Check, AlertCircle, Settings, Building2, User, Calendar } from 'lucide-react';
+import { Save, Upload, Check, AlertCircle, Settings, Building2, User, Calendar, Volume2 } from 'lucide-react';
+
 
 export const SettingsPage: React.FC = () => {
   const { settings, fetchSettings, updateSettings, get } = useSettingsStore();
@@ -269,6 +270,68 @@ export const SettingsPage: React.FC = () => {
               <option value="move_to_end">Move to End of Queue</option>
               <option value="skip">Skip Patient</option>
             </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Audio Announcement Settings */}
+      <div className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 sm:p-8 space-y-6 shadow-premium">
+        <h2 className="flex items-center gap-2.5 text-base font-bold text-slate-800 dark:text-white">
+          <Volume2 className="w-5 h-5 text-indigo-500" /> Audio Announcement Engine Settings
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Speech Language Mode</label>
+            <select
+              value={form.audio_language_mode || 'both'}
+              onChange={(e) => update('audio_language_mode', e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white"
+            >
+              <option value="both">Sequential (Bangla then English)</option>
+              <option value="bn">Bangla Only</option>
+              <option value="en">English Only</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Call Repeat Count</label>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              value={form.audio_repeat_count || '3'}
+              onChange={(e) => update('audio_repeat_count', e.target.value)}
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Voice Provider</label>
+            <select
+              value={form.audio_voice_provider || 'web_speech'}
+              onChange={(e) => update('audio_voice_provider', e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white"
+            >
+              <option value="web_speech">Browser Speech Synthesis (WebSpeech API)</option>
+              <option value="server_tts">Server TTS / Pre-recorded Audio</option>
+              <option value="fallback">Auto-Failover (WebSpeech with Server Fallback)</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Inter-Repeat Delay (ms)</label>
+            <input
+              type="number"
+              min={1000}
+              max={10000}
+              step={500}
+              value={form.audio_repeat_delay || '3500'}
+              onChange={(e) => update('audio_repeat_delay', e.target.value)}
+              className="w-full"
+            />
           </div>
         </div>
       </div>

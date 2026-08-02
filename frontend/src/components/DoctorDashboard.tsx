@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore } from '../store/useQueueStore';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
-import { Play, Pause, ChevronRight, UserCheck, AlertCircle, Clock, LogOut, Sun, Moon, Stethoscope, Coffee, ShieldAlert, FileText, Monitor } from 'lucide-react';
+import { Play, Pause, ChevronRight, UserCheck, AlertCircle, Clock, LogOut, Sun, Moon, Stethoscope, Coffee, ShieldAlert, FileText, Monitor, Calendar } from 'lucide-react';
+
 import { useThemeStore } from '../store/useThemeStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
@@ -11,6 +12,8 @@ import { getStorageBaseUrl } from '../utils/api';
 import { UserProfile } from './UserProfile';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { useDisplayModeContext } from './DisplayModeContext';
+import { AudioControlPanel } from './AudioControlPanel';
+
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
 
@@ -291,7 +294,11 @@ export const DoctorDashboard: React.FC = () => {
                   <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 font-semibold">TV is in {displayMode} mode</p>
                 )}
               </motion.div>
+
+              {/* Audio Announcement Controls */}
+              <AudioControlPanel />
             </div>
+
 
             {/* Middle Main Active Patient Column */}
             <div className="lg:col-span-2 space-y-6">

@@ -3,14 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../store/useQueueStore';
 import { echo } from '../utils/echo';
 import api, { createPublicApi, getStorageBaseUrl } from '../utils/api';
-import { Monitor, Volume2, VolumeX, UserCheck, Play, Pause, Sun, Moon, Bookmark, Coffee, ShieldAlert, FileText, Loader2, LogOut, Maximize, Minimize, User } from 'lucide-react';
+import { Monitor, Volume2, VolumeX, UserCheck, Play, Sun, Moon, Bookmark, Coffee, ShieldAlert, FileText, Loader2, LogOut, Maximize, Minimize, User } from 'lucide-react';
+
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { UserProfile } from './UserProfile';
 import { useDisplayModeContext } from './DisplayModeContext';
-import { io } from 'socket.io-client';
+import { useAudioSync } from '../hooks/useAudioSync';
+import { AudioTickerBanner } from './AudioTickerBanner';
+import { AudioAutoplayOverlay } from './AudioAutoplayOverlay';
+
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
 
@@ -19,6 +23,8 @@ interface TvDisplayProps {
 }
 
 export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
+  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
+  useAudioSync(selectedDoctorId ?? undefined);
   const { queueDay: authQueueDay, items: authItems, fetchTodayQueue, subscribeToQueue } = useQueueStore();
   const { theme, toggleTheme } = useThemeStore();
   const { logout, user } = useAuthStore();
@@ -47,7 +53,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const queueDay = isPublicView ? pubQueueDay : authQueueDay;
   const items = isPublicView ? pubItems : authItems;
 
-  const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
+
   const [viewMode, setViewMode] = useState<'single' | 'lobby'>('single');
   const [lobbyQueues, setLobbyQueues] = useState<Record<number, { called: QueueItem | null; waiting: QueueItem[] }>>({});
   const [clock, setClock] = useState(new Date().toLocaleTimeString());
@@ -208,24 +214,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
       // Auth mode: use store + WebSocket
       fetchTodayQueue(selectedDoctorId);
 
-      let socket: any = null;
-      try {
-        const socketUrl = (import.meta.env.VITE_NODE_WS_URL || 'https://ws.ferozamedicinecorner.com').trim();
-        socket = io(socketUrl, { transports: ['websocket', 'polling'] });
-        socket.on('queue-created', () => fetchTodayQueue(selectedDoctorId));
-        socket.on('queue-updated', (payload: any) => {
-          fetchTodayQueue(selectedDoctorId);
-          if (payload?.status === 'Called' && payload?.serial_no) speakAnnouncement(payload.serial_no);
-        });
-      } catch { /* socket.io-client fallback */ }
-
-      return () => {
-        if (socket) {
-          socket.off('queue-created');
-          socket.off('queue-updated');
-          socket.disconnect();
-        }
-      };
+      return () => {};
     }
   }, [selectedDoctorId, viewMode, isPublicView]);
 
@@ -852,6 +841,8 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
       {!embedded && <MobileBottomNav onDoctors={() => { setViewMode('single'); setSelectedDoctorId(null); }} />}
       <UserProfile open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <AudioTickerBanner />
+      <AudioAutoplayOverlay />
     </div>
   );
 };

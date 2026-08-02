@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Calendar,
   User,
   Phone,
   Clock,
-  FileText,
   CheckCircle2,
   AlertCircle,
   Stethoscope,
   Search,
-  Sparkles,
   ChevronRight
 } from 'lucide-react';
+
 import api from '../utils/api';
 
 export const PublicBookingPage: React.FC = () => {

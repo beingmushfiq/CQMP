@@ -11,12 +11,12 @@ import {
   Clock,
   Phone,
   User,
-  Filter,
   RefreshCw,
   Tag,
   AlertCircle
 } from 'lucide-react';
-import { useBookings, BookingItem } from '../hooks/useBookings';
+import { useBookings, type BookingItem } from '../hooks/useBookings';
+
 import { BookingFormModal } from '../components/BookingFormModal';
 
 export const BookingManagement: React.FC = () => {

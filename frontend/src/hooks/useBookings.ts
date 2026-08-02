@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
-import { useSocket } from './useSocket';
+import { echo } from '../utils/echo';
+
 
 export interface BookingItem {
   id: number;
@@ -45,7 +46,7 @@ export function useBookings(selectedDate?: string, selectedDoctorId?: number | n
   const [stats, setStats] = useState<BookingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const socket = useSocket();
+
 
   const targetDate = selectedDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
@@ -74,30 +75,24 @@ export function useBookings(selectedDate?: string, selectedDoctorId?: number | n
     fetchBookings();
   }, [fetchBookings]);
 
-  // Realtime Socket.IO subscriptions
+  // Realtime Echo channel subscriptions
   useEffect(() => {
-    if (!socket) return;
+    const channel = echo.channel('bookings');
 
-    const handleCreated = () => fetchBookings();
-    const handleUpdated = () => fetchBookings();
-    const handleConverted = () => fetchBookings();
+    const handleUpdate = () => fetchBookings();
 
-    socket.on('booking.created', handleCreated);
-    socket.on('booking.confirmed', handleUpdated);
-    socket.on('booking.cancelled', handleUpdated);
-    socket.on('booking.checked_in', handleUpdated);
-    socket.on('booking.no_show', handleUpdated);
-    socket.on('bookings.converted', handleConverted);
+    channel
+      .listen('.BookingCreated', handleUpdate)
+      .listen('.BookingConfirmed', handleUpdate)
+      .listen('.BookingCancelled', handleUpdate)
+      .listen('.BookingCheckedIn', handleUpdate)
+      .listen('.BookingNoShow', handleUpdate)
+      .listen('.BookingsConverted', handleUpdate);
 
     return () => {
-      socket.off('booking.created', handleCreated);
-      socket.off('booking.confirmed', handleUpdated);
-      socket.off('booking.cancelled', handleUpdated);
-      socket.off('booking.checked_in', handleUpdated);
-      socket.off('booking.no_show', handleUpdated);
-      socket.off('bookings.converted', handleConverted);
+      echo.leave('bookings');
     };
-  }, [socket, fetchBookings]);
+  }, [fetchBookings]);
 
   const createBooking = async (payload: any) => {
     const res = await api.post('/bookings', payload);

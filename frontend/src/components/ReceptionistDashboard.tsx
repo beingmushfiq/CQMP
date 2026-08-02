@@ -8,6 +8,8 @@ import api from '../utils/api';
 import { Search, UserPlus, ShieldAlert, ArrowDownUp, PhoneCall, Printer, Trash2, CheckCircle2, SkipForward, X, AlertTriangle, Bookmark, Pause, Play, Volume2, VolumeX, Coffee, Monitor, FileText } from 'lucide-react';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { useDisplayModeContext } from './DisplayModeContext';
+import { AudioControlPanel } from './AudioControlPanel';
+
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
 
@@ -540,6 +542,9 @@ export const ReceptionistDashboard: React.FC = () => {
               <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 font-semibold">TV is in {displayMode} mode</p>
             )}
           </motion.div>
+
+          {/* Audio Announcement Controls */}
+          <AudioControlPanel />
         </div>
 
         {/* Center Column - Queue Board */}
