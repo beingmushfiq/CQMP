@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Stethoscope, Monitor, Settings } from 'lucide-react';
+import { LayoutDashboard, Stethoscope, Monitor, Settings, Calendar } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
@@ -23,6 +23,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       icon: <LayoutDashboard className="w-6 h-6" />,
       gradient: 'from-blue-500 to-cyan-500',
       roles: ['Super Admin', 'Admin', 'Receptionist'],
+    },
+    {
+      id: 'bookings',
+      labelKey: 'nav.bookings',
+      descKey: 'Manage next-day reservations & serials',
+      icon: <Calendar className="w-6 h-6" />,
+      gradient: 'from-violet-500 to-indigo-500',
+      roles: ['Super Admin', 'Admin', 'Receptionist', 'Doctor'],
     },
     {
       id: 'doctor',
@@ -49,6 +57,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       roles: ['Super Admin'],
     },
   ];
+
 
   const userRoles = user?.roles || [];
   const visiblePanels = panels.filter((p) => p.roles.some((r) => userRoles.includes(r)));

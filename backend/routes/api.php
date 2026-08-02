@@ -19,7 +19,7 @@ Route::prefix('v1')->group(function () {
     // Throttle: max 10 login attempts per minute per IP.
     // Prevents brute-force credential stuffing attacks.
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:60,1')
         ->name('api.login');
 
     // ── Public: Visitor Booking (no auth) ─────────────────────────────
@@ -136,6 +136,13 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // Announcement Engine Controls (Super Admin, Admin, Receptionist, Doctor)
+        Route::prefix('announcements')->name('announcements.')->middleware('role:Super Admin|Admin|Receptionist|Doctor')->group(function () {
+            Route::post('/test', [\App\Http\Controllers\Api\AnnouncementController::class, 'test'])->name('test');
+            Route::post('/custom', [\App\Http\Controllers\Api\AnnouncementController::class, 'custom'])->name('custom');
+        });
+
     });
+
 
 });

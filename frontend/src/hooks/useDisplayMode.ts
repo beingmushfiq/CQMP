@@ -69,7 +69,10 @@ export const useDisplayMode = () => {
       .listen('display.mode.resumed', handleModeResumed)
       .listen('.display.mode.resumed', handleModeResumed);
 
-    // 3. Failover / Reconnection handler: fetch latest display mode when socket reconnects
+    // 3. Polling fallback for unauthenticated public TV screens (every 5 seconds)
+    const pollInterval = setInterval(fetchLatestState, 5000);
+
+    // 4. Failover / Reconnection handler: fetch latest display mode when socket reconnects
     const handleReconnect = () => {
       console.log('[CQMP] Socket reconnected. Refreshing display mode state...');
       fetchLatestState();
@@ -82,6 +85,7 @@ export const useDisplayMode = () => {
     }
 
     return () => {
+      clearInterval(pollInterval);
       echo.leave(channelName);
       if (connector && connector.pusher) {
         connector.pusher.connection.unbind('connected', handleReconnect);
@@ -92,8 +96,21 @@ export const useDisplayMode = () => {
   // Methods to transition display state (for staff roles)
   const setMode = async (mode: DisplayMode, params: Partial<DisplayState> = {}) => {
     try {
-      await api.post('/display/mode', { mode, ...params });
-      // The socket event will broadcast back and set state locally automatically.
+      const res = await api.post('/display/mode', { mode, ...params });
+      if (res.data?.state) {
+        setDisplayState({
+          mode: res.data.state.mode,
+          title_bn: res.data.state.title_bn ?? null,
+          title_en: res.data.state.title_en ?? null,
+          message_bn: res.data.state.message_bn ?? null,
+          message_en: res.data.state.message_en ?? null,
+          resume_time: res.data.state.resume_at ?? null,
+          activated_by: 'Staff',
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        setDisplayState((prev) => ({ ...prev, mode, ...params }));
+      }
     } catch (err) {
       console.error('[CQMP] Transition state failed:', err);
       throw err;
@@ -103,6 +120,16 @@ export const useDisplayMode = () => {
   const resume = async () => {
     try {
       await api.post('/display/resume');
+      setDisplayState((prev) => ({
+        ...prev,
+        mode: 'NORMAL',
+        title_bn: null,
+        title_en: null,
+        message_bn: null,
+        message_en: null,
+        resume_time: null,
+        timestamp: new Date().toISOString(),
+      }));
     } catch (err) {
       console.error('[CQMP] Resume state failed:', err);
       throw err;

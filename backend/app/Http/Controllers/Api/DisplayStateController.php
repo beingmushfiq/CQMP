@@ -53,11 +53,8 @@ class DisplayStateController extends Controller
         $user = $request->user();
 
         // Role Permission Guard:
-        // - Doctor / Receptionist: Can activate BREAK, REPORT, NORMAL. Cannot activate EMERGENCY.
-        // - Super Admin: Can activate all modes (including EMERGENCY).
-        if ($mode === DisplayMode::EMERGENCY && !$user->hasRole('Super Admin')) {
-            return response()->json(['message' => 'Unauthorized. Only Super Admin can activate EMERGENCY mode.'], 403);
-        }
+        // Super Admin, Admin, Doctor, and Receptionist can trigger Display Modes.
+        // No restrictive role block for staff members on EMERGENCY mode.
 
         $state = $this->service->transitionTo($mode, $request->only([
             'title_bn', 'title_en', 'message_bn', 'message_en', 'resume_at', 'metadata'

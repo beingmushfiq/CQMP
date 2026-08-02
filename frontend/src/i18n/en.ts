@@ -6,6 +6,7 @@ const en = {
   // Nav
   'nav.dashboard': 'Dashboard',
   'nav.reception': 'Reception Desk',
+  'nav.bookings': 'Bookings',
   'nav.doctor': 'Doctor Chamber',
   'nav.tv': 'TV Display',
   'nav.settings': 'Settings',

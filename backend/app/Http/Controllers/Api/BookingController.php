@@ -75,7 +75,7 @@ class BookingController extends Controller
         $data = $request->validate([
             'doctor_id'      => ['required', 'exists:doctors,id'],
             'patient_name'   => ['required', 'string', 'max:150'],
-            'patient_phone'  => ['required', 'string', 'max:20'],
+            'patient_phone'  => ['nullable', 'string', 'max:20'],
             'patient_type'   => ['required', 'string', 'in:New,Follow-up,Report Showing'],
             'booking_date'   => ['required', 'date'],
             'preferred_slot' => ['nullable', 'string', 'max:50'],
@@ -96,7 +96,7 @@ class BookingController extends Controller
         $data = $request->validate([
             'doctor_id'      => ['required', 'exists:doctors,id'],
             'patient_name'   => ['required', 'string', 'max:150'],
-            'patient_phone'  => ['required', 'string', 'max:20'],
+            'patient_phone'  => ['nullable', 'string', 'max:20'],
             'patient_type'   => ['required', 'string', 'in:New,Follow-up,Report Showing'],
             'booking_date'   => ['required', 'date'],
             'preferred_slot' => ['nullable', 'string', 'max:50'],

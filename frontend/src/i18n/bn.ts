@@ -6,6 +6,7 @@ const bn: Record<string, string> = {
   // Nav
   'nav.dashboard': 'ড্যাশবোর্ড',
   'nav.reception': 'রিসেপশন ডেস্ক',
+  'nav.bookings': 'অগ্রিম বুকিং',
   'nav.doctor': 'ডাক্তার চেম্বার',
   'nav.tv': 'টিভি ডিসপ্লে',
   'nav.settings': 'সেটিংস',

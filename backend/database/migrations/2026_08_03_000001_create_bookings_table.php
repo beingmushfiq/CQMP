@@ -22,7 +22,7 @@ return new class extends Migration
 
             // Denormalised patient info (always stored for offline lookup)
             $table->string('patient_name');
-            $table->string('patient_phone', 20);
+            $table->string('patient_phone', 20)->nullable();
             $table->string('patient_type')->default('New'); // New | Follow-up | Report Showing
 
             // Scheduling

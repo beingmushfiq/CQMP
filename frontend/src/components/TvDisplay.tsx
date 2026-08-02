@@ -486,12 +486,12 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
     );
   }
 
-  // ── Single Doctor TV Display (Digital Signage optimized) ──
+  // ── Single Doctor TV Display (Digital Signage optimized for Smart TVs) ──
   return (
-    <div className="h-full bg-slate-50 dark:bg-surface-dark text-slate-900 dark:text-white flex flex-col relative overflow-hidden transition-colors duration-300">
-      {/* Ambient blurs */}
-      <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-indigo-500/8 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
+    <div className="w-screen h-screen max-w-[100vw] max-h-[100vh] bg-slate-950 text-white flex flex-col justify-between relative overflow-hidden select-none p-[2.5vw] lg:p-[2vw] box-border transition-colors duration-300">
+      {/* Ambient Signage Glows */}
+      <div className="absolute top-1/4 left-1/4 w-[30vw] h-[30vw] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* ── Display Mode Overlays (State Machine) ── */}
       <AnimatePresence>
