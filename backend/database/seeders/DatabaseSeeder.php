@@ -95,9 +95,9 @@ class DatabaseSeeder extends Seeder
 
         // Create demo doctor
         Doctor::firstOrCreate(
-            ['name' => 'Dr. Asif', 'clinic_id' => $clinic->id],
+            ['name' => 'Dr. Muhammad Asif Sattar (MBBS MPH)', 'clinic_id' => $clinic->id],
             [
-                'specialization'            => 'General Physician',
+                'specialization'            => 'General Practitioner',
                 'average_consultation_time' => 15,
                 'break_message'             => 'বিরতি চলছে। অনুগ্রহ করে অপেক্ষা করুন।',
                 'english_break_message'     => 'Doctor is on a break. Please wait.',

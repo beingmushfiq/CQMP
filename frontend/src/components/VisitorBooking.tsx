@@ -24,7 +24,7 @@ const publicApi = createPublicApi();
 
 export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
   const { t } = useLanguageStore();
-  const DEFAULT_DOCTOR: Doctor = { id: 1, name: 'Dr. Asif', specialization: 'General Physician' };
+  const DEFAULT_DOCTOR: Doctor = { id: 1, name: 'Dr. Muhammad Asif Sattar (MBBS MPH)', specialization: 'General Practitioner' };
   const [doctors, setDoctors] = useState<Doctor[]>([DEFAULT_DOCTOR]);
   const [doctorId, setDoctorId] = useState<number | null>(1);
   const [name, setName] = useState('');

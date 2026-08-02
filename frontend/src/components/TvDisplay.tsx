@@ -89,11 +89,11 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
       if (docs.length > 0) {
         setDoctors(docs);
       } else {
-        const docList = [{ id: 1, name: getSetting('doctor_name', 'Dr. Asif'), specialization: getSetting('doctor_specialization', 'General Physician') }];
+        const docList = [{ id: 1, name: getSetting('doctor_name', 'Dr. Muhammad Asif Sattar (MBBS MPH)'), specialization: getSetting('doctor_specialization', 'General Practitioner') }];
         setDoctors(docList);
       }
     }).catch(() => {
-      const docList = [{ id: 1, name: getSetting('doctor_name', 'Dr. Asif'), specialization: getSetting('doctor_specialization', 'General Physician') }];
+      const docList = [{ id: 1, name: getSetting('doctor_name', 'Dr. Muhammad Asif Sattar (MBBS MPH)'), specialization: getSetting('doctor_specialization', 'General Practitioner') }];
       setDoctors(docList);
     });
   }, []);
