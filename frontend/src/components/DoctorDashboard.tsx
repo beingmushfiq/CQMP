@@ -44,7 +44,7 @@ export const DoctorDashboard: React.FC = () => {
 
   useEffect(() => {
     api.get('/me').then(() => {
-      setDoctors([{ id: 1, name: getSetting('doctor_name', 'Dr. Sarah Rahman'), specialization: getSetting('doctor_specialization', 'Cardiologist') }]);
+      setDoctors([{ id: 1, name: getSetting('doctor_name', 'Dr. Asif'), specialization: getSetting('doctor_specialization', 'General Physician') }]);
     });
   }, []);
 

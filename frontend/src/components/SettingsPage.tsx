@@ -162,7 +162,7 @@ export const SettingsPage: React.FC = () => {
               value={form.doctor_name || ''}
               onChange={(e) => update('doctor_name', e.target.value)}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
-              placeholder="Dr. Sarah Rahman"
+              placeholder="Dr. Asif"
             />
           </div>
           <div>
@@ -172,7 +172,7 @@ export const SettingsPage: React.FC = () => {
               value={form.doctor_specialization || ''}
               onChange={(e) => update('doctor_specialization', e.target.value)}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all"
-              placeholder="Cardiologist"
+              placeholder="General Physician"
             />
           </div>
         </div>

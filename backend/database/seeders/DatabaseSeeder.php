@@ -16,6 +16,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Reset cached roles and permissions safely
+        try {
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        } catch (\Throwable $e) {
+            // Ignore if cache or permission tables are not yet created
+        }
+
         // Create roles
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin']);
         Role::firstOrCreate(['name' => 'Admin']);
@@ -72,35 +79,45 @@ class DatabaseSeeder extends Seeder
 
 
         // Create demo clinic
-        $clinic = Clinic::create([
-            'name'    => 'Metro Health Care',
-            'address' => '123 Health Street, Dhaka',
-            'phone'   => '+880-1700-000000',
-            'settings' => [
-                'serial_prefix' => '',
-                'serial_padding' => 3,
-                'timezone' => 'Asia/Dhaka',
-                'locale' => 'bn',
-            ],
-        ]);
+        $clinic = Clinic::firstOrCreate(
+            ['name' => 'Feroza Medicine Corner'],
+            [
+                'address'  => 'Dhaka, Bangladesh',
+                'phone'    => '+880-1700-000000',
+                'settings' => [
+                    'serial_prefix'  => '',
+                    'serial_padding' => 3,
+                    'timezone'       => 'Asia/Dhaka',
+                    'locale'         => 'bn',
+                ],
+            ]
+        );
 
-        // Create demo doctors
-        Doctor::create([
-            'clinic_id'                  => $clinic->id,
-            'name'                       => 'Dr. Sarah Rahman',
-            'specialization'             => 'Cardiologist',
-            'average_consultation_time'  => 15,
-            'break_message'              => 'চিকিৎসক সাময়িক বিরতিতে আছেন।',
-            'english_break_message'      => 'Doctor is on a short break.',
-            'is_available'               => true,
-        ]);
+        // Create demo doctor
+        Doctor::firstOrCreate(
+            ['name' => 'Dr. Asif', 'clinic_id' => $clinic->id],
+            [
+                'specialization'            => 'General Physician',
+                'average_consultation_time' => 15,
+                'break_message'             => 'বিরতি চলছে। অনুগ্রহ করে অপেক্ষা করুন।',
+                'english_break_message'     => 'Doctor is on a break. Please wait.',
+                'is_available'              => true,
+            ]
+        );
 
-        // Create demo announcements
-        Announcement::create([
-            'title'      => 'Welcome Announcement',
-            'message_bn' => 'মেট্রো হেলথ কেয়ারে আপনাকে স্বাগতম। অনুগ্রহ করে আপনার সিরিয়াল নম্বরের জন্য অপেক্ষা করুন।',
-            'message_en' => 'Welcome to Metro Health Care. Please wait for your serial number to be called.',
-            'is_active'  => true,
-        ]);
+        /*
+        |--------------------------------------------------------------------------
+        | Default Announcement
+        |--------------------------------------------------------------------------
+        */
+
+        Announcement::firstOrCreate(
+            ['title' => 'Welcome Announcement'],
+            [
+                'message_bn' => 'ফেরোজা মেডিসিন কর্নারে আপনাকে স্বাগতম। অনুগ্রহ করে আপনার সিরয়াল নম্বরের জন্য অপেক্ষা করুন।',
+                'message_en' => 'Welcome to Feroza Medicine Corner. Please wait for your serial number to be called.',
+                'is_active'  => true,
+            ]
+        );
     }
 }
