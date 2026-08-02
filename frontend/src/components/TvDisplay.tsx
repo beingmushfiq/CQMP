@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../store/useQueueStore';
 import { echo } from '../utils/echo';
 import api, { createPublicApi, getStorageBaseUrl } from '../utils/api';
-import { Monitor, Volume2, VolumeX, UserCheck, Play, Pause, Sun, Moon, Bookmark, Coffee, LogOut, Maximize, Minimize, User } from 'lucide-react';
+import { Monitor, Volume2, VolumeX, UserCheck, Play, Pause, Sun, Moon, Bookmark, Coffee, ShieldAlert, FileText, Loader2, LogOut, Maximize, Minimize, User } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { UserProfile } from './UserProfile';
+import { useDisplayModeContext } from './DisplayModeContext';
 import { io } from 'socket.io-client';
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
@@ -24,6 +25,14 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const { get: getSetting } = useSettingsStore();
   const { t } = useLanguageStore();
   const [doctors, setDoctors] = useState<any[]>([]);
+
+  // ── Centralized Display State Machine ──
+  const displayState = useDisplayModeContext();
+  // True when an overlay mode is active (takes priority over queue rendering)
+  const isBreakMode = displayState.mode === 'BREAK' || displayState.mode === 'LUNCH' || displayState.mode === 'PRAYER';
+  const isEmergencyMode = displayState.mode === 'EMERGENCY';
+  const isReportMode = displayState.mode === 'REPORT';
+  const isOfflineMode = displayState.mode === 'OFFLINE' || displayState.mode === 'MAINTENANCE';
 
   // Public API instance — used when no auth token is present (public TV view)
   const publicApi = React.useMemo(() => createPublicApi(), []);
@@ -380,9 +389,9 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   if (viewMode === 'lobby') {
     return (
       <div className="h-full bg-slate-50 dark:bg-surface-dark text-slate-900 dark:text-white flex flex-col justify-between p-4 md:p-6 lg:p-8 transition-colors duration-300 relative pb-24 md:pb-6 overflow-hidden">
-        {/* On Break Overlay for lobby — same beautiful break screen */}
+        {/* On Break Overlay for lobby — driven by centralized Display State Machine */}
         <AnimatePresence>
-          {queueDay?.status === 'paused' && (
+          {(isBreakMode || queueDay?.status === 'paused') && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -495,10 +504,13 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
       <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-indigo-500/8 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
 
-      {/* ── On Break Overlay (Digital Signage — beautiful break screen) ── */}
+      {/* ── Display Mode Overlays (State Machine) ── */}
       <AnimatePresence>
-        {queueDay?.status === 'paused' && (
+
+        {/* BREAK / LUNCH / PRAYER overlay */}
+        {(isBreakMode || queueDay?.status === 'paused') && (
           <motion.div
+            key="break-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -512,32 +524,22 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
               transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
               className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
             >
-              {/* Large pulsing icon */}
               <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-amber-400/20 border-4 border-amber-400/50 dark:border-amber-500/50 shadow-[0_0_80px_rgba(245,158,11,0.25)]">
-                <motion.div
-                  animate={{ scale: [1, 1.08, 1] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <Coffee className="w-14 h-14 md:w-22 md:h-22 lg:w-28 lg:h-28 text-amber-500 dark:text-amber-400" style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} />
+                <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
+                  <Coffee style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-amber-500 dark:text-amber-400" />
                 </motion.div>
               </div>
-
-              {/* Bangla primary message — largest */}
               <div className="space-y-3 md:space-y-5">
                 <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-amber-600 dark:text-amber-400 tracking-tight leading-none">
-                  {t('tv.on.break')}
+                  {displayState.title_bn || t('tv.on.break')}
                 </h1>
-                {/* English secondary message */}
                 <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">
-                  {t('tv.on.break.subtitle')}
+                  {displayState.title_en || t('tv.on.break.subtitle')}
                 </p>
-                {/* "Resume shortly" copy — generic */}
                 <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
-                  {t('tv.on.break.wait')}
+                  {displayState.message_en || t('tv.on.break.wait')}
                 </p>
               </div>
-
-              {/* Paused indicator */}
               <div className="flex items-center justify-center gap-3 md:gap-4 text-amber-500/70 dark:text-amber-400/60">
                 <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-400 animate-ping" />
                 <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">{t('tv.queue.paused')}</span>
@@ -546,6 +548,127 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
             </motion.div>
           </motion.div>
         )}
+
+        {/* EMERGENCY overlay */}
+        {isEmergencyMode && (
+          <motion.div
+            key="emergency-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-rose-50/90 via-white/80 to-red-50/90 dark:from-surface-dark/92 dark:via-surface-dark/88 dark:to-rose-950/40"
+          >
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: -10 }}
+              transition={{ duration: 0.35, delay: 0.05, ease: 'easeOut' }}
+              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
+            >
+              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-rose-500/20 border-4 border-rose-500/50 dark:border-rose-400/50 shadow-[0_0_80px_rgba(239,68,68,0.30)]">
+                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}>
+                  <ShieldAlert style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-rose-500 dark:text-rose-400" />
+                </motion.div>
+              </div>
+              <div className="space-y-3 md:space-y-5">
+                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none">
+                  {displayState.title_bn || 'জরুরি বিজ্ঞপ্তি'}
+                </h1>
+                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">
+                  {displayState.title_en || 'Emergency Notice'}
+                </p>
+                {displayState.message_en && (
+                  <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
+                    {displayState.message_en}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center justify-center gap-3 md:gap-4 text-rose-500/70 dark:text-rose-400/60">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-rose-400 animate-ping" />
+                <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">Emergency</span>
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-rose-400 animate-ping" style={{ animationDelay: '0.4s' }} />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* REPORT overlay */}
+        {isReportMode && (
+          <motion.div
+            key="report-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-indigo-50/80 via-white/70 to-slate-50/80 dark:from-surface-dark/90 dark:via-surface-dark/85 dark:to-indigo-950/30"
+          >
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: -10 }}
+              transition={{ duration: 0.4, delay: 0.08, ease: 'easeOut' }}
+              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
+            >
+              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-indigo-500/15 border-4 border-indigo-500/40 dark:border-indigo-400/40 shadow-[0_0_80px_rgba(99,102,241,0.20)]">
+                <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}>
+                  <FileText style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-indigo-500 dark:text-indigo-400" />
+                </motion.div>
+              </div>
+              <div className="space-y-3 md:space-y-5">
+                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight leading-none">
+                  {displayState.title_bn || 'রিপোর্ট চলছে'}
+                </h1>
+                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">
+                  {displayState.title_en || 'Report in Progress'}
+                </p>
+                <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
+                  {displayState.message_en || 'Service will resume shortly.'}
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 md:gap-4 text-indigo-500/70 dark:text-indigo-400/60">
+                <Loader2 className="w-5 h-5 md:w-7 md:h-7 animate-spin" />
+                <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">Please Wait</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* OFFLINE / MAINTENANCE overlay */}
+        {isOfflineMode && (
+          <motion.div
+            key="offline-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-slate-100/90 via-white/80 to-slate-200/80 dark:from-surface-dark/95 dark:via-surface-dark/90 dark:to-slate-900/60"
+          >
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: -10 }}
+              transition={{ duration: 0.4, delay: 0.08, ease: 'easeOut' }}
+              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
+            >
+              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-slate-300/30 border-4 border-slate-400/30 dark:border-slate-600/40">
+                <Monitor style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-slate-400 dark:text-slate-500" />
+              </div>
+              <div className="space-y-3 md:space-y-5">
+                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-slate-500 dark:text-slate-400 tracking-tight leading-none">
+                  {displayState.title_bn || 'সেবা বন্ধ'}
+                </h1>
+                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-500 dark:text-slate-400">
+                  {displayState.title_en || 'Service Unavailable'}
+                </p>
+                <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
+                  {displayState.message_en || 'Please check back shortly.'}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
       </AnimatePresence>
 
       {/* Header */}

@@ -29,6 +29,8 @@ function getInitialTabFromPath(path: string): TabId {
   return 'dashboard';
 }
 
+import { DisplayModeProvider } from './components/DisplayModeContext';
+
 function App() {
   const { token, user, fetchUser } = useAuthStore();
   const { fetchSettings } = useSettingsStore();
@@ -86,7 +88,11 @@ function App() {
   const isDisplayRoute = cleanPath === '/display';
 
   if (isDisplayRoute) {
-    return <DisplayFullscreenLayout />;
+    return (
+      <DisplayModeProvider>
+        <DisplayFullscreenLayout />
+      </DisplayModeProvider>
+    );
   }
 
   if (currentView === 'loading') {
@@ -98,18 +104,32 @@ function App() {
   }
 
   if (currentView === 'login') return <LoginForm />;
-  if (currentView === 'display-fullscreen') return <DisplayFullscreenLayout />;
-  if (currentView === 'tv') return <DisplayFullscreenLayout />;
+  if (currentView === 'display-fullscreen') {
+    return (
+      <DisplayModeProvider>
+        <DisplayFullscreenLayout />
+      </DisplayModeProvider>
+    );
+  }
+  if (currentView === 'tv') {
+    return (
+      <DisplayModeProvider>
+        <DisplayFullscreenLayout />
+      </DisplayModeProvider>
+    );
+  }
 
   // Layout-wrapped views (Doctor, Receptionist, Admin, Super Admin)
   return (
-    <Layout activeTab={activeTab} onTabChange={handleTabChange}>
-      {activeTab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
-      {activeTab === 'reception' && <ReceptionistDashboard />}
-      {activeTab === 'doctor' && <DoctorDashboard />}
-      {activeTab === 'tv' && <DisplayPreviewLayout onTabChange={handleTabChange} />}
-      {activeTab === 'settings' && <SettingsPage />}
-    </Layout>
+    <DisplayModeProvider>
+      <Layout activeTab={activeTab} onTabChange={handleTabChange}>
+        {activeTab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
+        {activeTab === 'reception' && <ReceptionistDashboard />}
+        {activeTab === 'doctor' && <DoctorDashboard />}
+        {activeTab === 'tv' && <DisplayPreviewLayout onTabChange={handleTabChange} />}
+        {activeTab === 'settings' && <SettingsPage />}
+      </Layout>
+    </DisplayModeProvider>
   );
 }
 

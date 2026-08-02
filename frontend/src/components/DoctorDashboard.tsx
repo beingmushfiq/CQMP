@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore } from '../store/useQueueStore';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
-import { Play, Pause, ChevronRight, UserCheck, AlertCircle, Clock, LogOut, Sun, Moon, Stethoscope } from 'lucide-react';
+import { Play, Pause, ChevronRight, UserCheck, AlertCircle, Clock, LogOut, Sun, Moon, Stethoscope, Coffee, ShieldAlert, FileText, Monitor } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import { getStorageBaseUrl } from '../utils/api';
 import { UserProfile } from './UserProfile';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
+import { useDisplayModeContext } from './DisplayModeContext';
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
 
@@ -25,6 +26,9 @@ export const DoctorDashboard: React.FC = () => {
   const [delayMinutes, setDelayMinutes] = useState<number>(0);
   const [openError, setOpenError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [displayLoading, setDisplayLoading] = useState(false);
+
+  const { mode: displayMode, setMode: setDisplayMode, resume: resumeDisplay } = useDisplayModeContext();
 
   const activeItem = items.find((i) => i.status === 'Called');
   const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no);
@@ -210,6 +214,64 @@ export const DoctorDashboard: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-slate-400 text-[10px] text-right">{t('doctor.delay.press.d')}</p>
+              </motion.div>
+
+              {/* Display Mode Controls */}
+              <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-xl space-y-3 shadow-premium">
+                <h2 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                  Display Controls
+                </h2>
+                <p className="text-slate-400 dark:text-slate-500 text-[10px]">Controls the waiting room TV display</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={async () => { setDisplayLoading(true); try { await resumeDisplay(); } finally { setDisplayLoading(false); } }}
+                    disabled={displayLoading || displayMode === 'NORMAL'}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg font-semibold text-xs cursor-pointer transition-all active:scale-[0.97] min-h-[44px] border ${
+                      displayMode === 'NORMAL'
+                        ? 'bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 border-slate-200 dark:border-slate-700 hover:border-emerald-500/40'
+                    }`}
+                  >
+                    <Play className="w-3.5 h-3.5" /> Normal
+                  </button>
+                  <button
+                    onClick={async () => { setDisplayLoading(true); try { await setDisplayMode('BREAK'); } finally { setDisplayLoading(false); } }}
+                    disabled={displayLoading || displayMode === 'BREAK'}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg font-semibold text-xs cursor-pointer transition-all active:scale-[0.97] min-h-[44px] border ${
+                      displayMode === 'BREAK'
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/20 text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 border-slate-200 dark:border-slate-700 hover:border-amber-500/40'
+                    }`}
+                  >
+                    <Coffee className="w-3.5 h-3.5" /> Break
+                  </button>
+                  <button
+                    onClick={async () => { setDisplayLoading(true); try { await setDisplayMode('REPORT'); } finally { setDisplayLoading(false); } }}
+                    disabled={displayLoading || displayMode === 'REPORT'}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg font-semibold text-xs cursor-pointer transition-all active:scale-[0.97] min-h-[44px] border ${
+                      displayMode === 'REPORT'
+                        ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 border-slate-200 dark:border-slate-700 hover:border-indigo-500/40'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Report
+                  </button>
+                  <button
+                    onClick={async () => { setDisplayLoading(true); try { await setDisplayMode('EMERGENCY'); } finally { setDisplayLoading(false); } }}
+                    disabled={displayLoading || displayMode === 'EMERGENCY'}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg font-semibold text-xs cursor-pointer transition-all active:scale-[0.97] min-h-[44px] border ${
+                      displayMode === 'EMERGENCY'
+                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border-slate-200 dark:border-slate-700 hover:border-rose-500/40'
+                    }`}
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5" /> Emergency
+                  </button>
+                </div>
+                {displayMode !== 'NORMAL' && (
+                  <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 font-semibold">TV is in {displayMode} mode</p>
+                )}
               </motion.div>
             </div>
 

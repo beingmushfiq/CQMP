@@ -39,6 +39,11 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:20,1')
         ->name('public.book');
 
+    // Public display mode endpoint for unauthenticated signage screens
+    Route::get('/display/mode', [\App\Http\Controllers\Api\DisplayStateController::class, 'show'])
+        ->middleware('throttle:60,1')
+        ->name('display.mode');
+
     // ── Public: Settings (no auth) ────────────────────────────────────
     Route::get('/settings/public', [SettingsController::class, 'publicSettings'])->name('settings.public');
 
@@ -87,6 +92,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/doctor/delay', [QueueController::class, 'updateDelay'])
             ->middleware('role:Super Admin|Admin|Doctor')
             ->name('doctor.delay');
+
+        // Centralized Display State Management (Super Admin, Admin, Receptionist, Doctor)
+        Route::prefix('display')->name('display.')->group(function () {
+            Route::post('/mode', [\App\Http\Controllers\Api\DisplayStateController::class, 'update'])
+                ->middleware('role:Super Admin|Admin|Receptionist|Doctor')
+                ->name('update');
+            Route::post('/resume', [\App\Http\Controllers\Api\DisplayStateController::class, 'resume'])
+                ->middleware('role:Super Admin|Admin|Receptionist|Doctor')
+                ->name('resume');
+        });
 
     });
 
