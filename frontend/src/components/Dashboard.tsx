@@ -54,23 +54,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const visiblePanels = panels.filter((p) => p.roles.some((r) => userRoles.includes(r)));
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-8 px-2 sm:px-4">
       {/* Welcome Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-6 shadow-premium"
+        className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-premium"
       >
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white text-lg font-bold shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-white text-2xl font-black shadow-lg shrink-0">
             {user?.name?.charAt(0)?.toUpperCase() || '?'}
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+          <div className="space-y-1">
+            <h1 className="text-fluid-title font-black tracking-tight text-slate-900 dark:text-white leading-tight">
               {user?.name || t('dashboard.welcome')}
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               {userRoles.join(' • ')} — {getSetting('site_title', 'CQMP')}
             </p>
           </div>
@@ -78,7 +78,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </motion.div>
 
       {/* Panel Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
         {visiblePanels.map((panel, idx) => (
           <motion.button
             key={panel.id}
@@ -86,17 +86,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 + idx * 0.08 }}
             onClick={() => onNavigate(panel.id)}
-            className="group bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-5 text-left hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-800/50 transition-all cursor-pointer shadow-premium"
+            className="group bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-6 sm:p-8 text-left hover:shadow-premium-lg hover:border-indigo-300 dark:hover:border-indigo-800 transition-all cursor-pointer shadow-premium flex flex-col justify-between min-h-[160px]"
           >
-            <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${panel.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform`}>
+            <div className="flex items-start gap-5 w-full">
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${panel.gradient} flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform shrink-0`}>
                 {panel.icon}
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <div className="flex-1 min-w-0 space-y-1">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {t(panel.labelKey)}
                 </h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t(panel.descKey)}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{t(panel.descKey)}</p>
               </div>
             </div>
           </motion.button>

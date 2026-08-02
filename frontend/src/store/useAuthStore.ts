@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '../utils/api';
+import { echo } from '../utils/echo';
 
 interface User {
   id: number;
@@ -26,7 +27,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     set({ loading: true });
-
     try {
       const response = await api.post('/login', { email, password });
       const { token, user } = response.data;
@@ -39,21 +39,35 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    // Fire-and-forget — even if the server call fails, perform full local teardown.
+    try { await api.post('/logout'); } catch { /* ignore */ }
+
+    // 1. Disconnect all Laravel Echo / Pusher / Reverb WebSocket channels
+    try { echo.disconnect(); } catch { /* ignore */ }
+
+    // 2. Clear queue polling timers and WebSocket subscriptions
+    //    Lazy import to avoid circular dependency at module init time.
     try {
-      await api.post('/logout');
-    } catch (e) {
-      // Allow local logout anyway
-    } finally {
-      localStorage.removeItem('cqmp_token');
-      set({ token: null, user: null });
-    }
+      const { useQueueStore } = await import('./useQueueStore');
+      useQueueStore.getState().resetQueue();
+    } catch { /* ignore */ }
+
+    // 3. Wipe every CQMP key from localStorage
+    const keysToRemove = Object.keys(localStorage).filter((k) => k.startsWith('cqmp_'));
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+
+    // 4. Clear Zustand auth state
+    set({ token: null, user: null });
+
+    // 5. Hard redirect — forces React to fully unmount, preventing zombie state
+    window.location.href = '/';
   },
 
   fetchUser: async () => {
     try {
       const response = await api.get('/me');
       set({ user: response.data.data });
-    } catch (error) {
+    } catch {
       localStorage.removeItem('cqmp_token');
       set({ token: null, user: null });
     }

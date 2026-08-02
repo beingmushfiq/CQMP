@@ -124,13 +124,16 @@ api.interceptors.response.use(
     });
 
     if (status === 401) {
-      // Token expired or invalid — clear local state and redirect to login.
-      // Do NOT redirect if on /tv — the TV display is a public panel and
-      // should remain visible even without an authenticated session.
+      // Token expired or invalid.
+      // Do NOT redirect if on /tv or /display — the display is a public panel
+      // and must remain visible even without an authenticated session.
       const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
-      localStorage.removeItem('cqmp_token');
-      if (path !== '/tv' && !path.includes('/login')) {
-        window.location.href = '/';
+      if (path !== '/tv' && path !== '/display' && !path.includes('/login')) {
+        // Route through the auth store so Socket.IO is always disconnected cleanly.
+        // Lazy import to avoid circular dependency at module init time.
+        import('../store/useAuthStore').then(({ useAuthStore }) => {
+          useAuthStore.getState().logout();
+        });
       }
     }
 

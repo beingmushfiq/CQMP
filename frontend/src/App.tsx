@@ -3,18 +3,19 @@ import { useAuthStore } from './store/useAuthStore';
 import { LoginForm } from './components/LoginForm';
 import { DoctorDashboard } from './components/DoctorDashboard';
 import { ReceptionistDashboard } from './components/ReceptionistDashboard';
-import { TvDisplay } from './components/TvDisplay';
+import { DisplayFullscreenLayout } from './components/DisplayFullscreenLayout';
+import { DisplayPreviewLayout } from './components/DisplayPreviewLayout';
 import { Layout, type TabId } from './components/Layout';
 import { SettingsPage } from './components/SettingsPage';
 import { Dashboard } from './components/Dashboard';
 import { useSettingsStore } from './store/useSettingsStore';
 
-type View = 'loading' | 'login' | 'doctor' | 'receptionist' | 'tv';
+type View = 'loading' | 'login' | 'doctor' | 'receptionist' | 'tv' | 'display-fullscreen';
 
 function homeViewForRoles(roles: string[]): View {
   if (roles.includes('Doctor')) return 'doctor';
   if (roles.includes('Receptionist') || roles.includes('Super Admin') || roles.includes('Admin')) return 'receptionist';
-  if (roles.includes('TV')) return 'tv';
+  if (roles.includes('TV')) return 'display-fullscreen';
   return 'login';
 }
 
@@ -22,7 +23,8 @@ function getInitialTabFromPath(path: string): TabId {
   const clean = path.toLowerCase().replace(/\/$/, '');
   if (clean === '/reception') return 'reception';
   if (clean === '/doctor') return 'doctor';
-  if (clean === '/tv') return 'tv';
+  // /display is the canonical public display route; /tv is kept for compat
+  if (clean === '/display' || clean === '/tv') return 'tv';
   if (clean === '/settings') return 'settings';
   return 'dashboard';
 }
@@ -51,8 +53,9 @@ function App() {
   useEffect(() => {
     if (token) {
       fetchUser();
-    } else if (pathname.toLowerCase().replace(/\/$/, '') !== '/tv') {
-      setCurrentView('login');
+    } else {
+      const p = pathname.toLowerCase().replace(/\/$/, '');
+      if (p !== '/tv' && p !== '/display') setCurrentView('login');
     }
   }, [token, pathname]);
 
@@ -64,17 +67,26 @@ function App() {
 
   const handleTabChange = (tab: TabId) => {
     setActiveTab(tab);
-    const newPath = tab === 'dashboard' ? '/' : `/${tab}`;
+    // Use /display as the canonical path for the TV/display tab
+    const newPath = tab === 'dashboard' ? '/' : tab === 'tv' ? '/display' : `/${tab}`;
     if (window.location.pathname !== newPath) {
       window.history.pushState({}, '', newPath);
       setPathname(newPath);
     }
   };
 
-  const isTvRoute = pathname.toLowerCase().replace(/\/$/, '') === '/tv';
+  const cleanPath = pathname.toLowerCase().replace(/\/$/, '');
 
-  if (isTvRoute) {
-    return <div className="h-screen"><TvDisplay /></div>;
+  // Redirect legacy /tv → /display immediately (no flash)
+  if (cleanPath === '/tv') {
+    window.location.replace('/display');
+    return null;
+  }
+
+  const isDisplayRoute = cleanPath === '/display';
+
+  if (isDisplayRoute) {
+    return <DisplayFullscreenLayout />;
   }
 
   if (currentView === 'loading') {
@@ -86,7 +98,8 @@ function App() {
   }
 
   if (currentView === 'login') return <LoginForm />;
-  if (currentView === 'tv') return <div className="h-screen"><TvDisplay /></div>;
+  if (currentView === 'display-fullscreen') return <DisplayFullscreenLayout />;
+  if (currentView === 'tv') return <DisplayFullscreenLayout />;
 
   // Layout-wrapped views (Doctor, Receptionist, Admin, Super Admin)
   return (
@@ -94,7 +107,7 @@ function App() {
       {activeTab === 'dashboard' && <Dashboard onNavigate={handleTabChange} />}
       {activeTab === 'reception' && <ReceptionistDashboard />}
       {activeTab === 'doctor' && <DoctorDashboard />}
-      {activeTab === 'tv' && <TvDisplay embedded />}
+      {activeTab === 'tv' && <DisplayPreviewLayout onTabChange={handleTabChange} />}
       {activeTab === 'settings' && <SettingsPage />}
     </Layout>
   );

@@ -210,7 +210,13 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
         });
       } catch { /* socket.io-client fallback */ }
 
-      return () => { if (socket) socket.disconnect(); };
+      return () => {
+        if (socket) {
+          socket.off('queue-created');
+          socket.off('queue-updated');
+          socket.disconnect();
+        }
+      };
     }
   }, [selectedDoctorId, viewMode, isPublicView]);
 
@@ -374,35 +380,37 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   if (viewMode === 'lobby') {
     return (
       <div className="h-full bg-slate-50 dark:bg-surface-dark text-slate-900 dark:text-white flex flex-col justify-between p-4 md:p-6 lg:p-8 transition-colors duration-300 relative pb-24 md:pb-6 overflow-hidden">
-        {/* On Break Overlay for lobby */}
+        {/* On Break Overlay for lobby — same beautiful break screen */}
         <AnimatePresence>
           {queueDay?.status === 'paused' && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-xl bg-white/60 dark:bg-surface-dark/80"
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-amber-50/80 via-white/70 to-orange-50/80 dark:from-surface-dark/90 dark:via-surface-dark/85 dark:to-amber-950/30"
             >
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="text-center space-y-4 md:space-y-6 px-4"
+                initial={{ scale: 0.88, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.92, opacity: 0, y: -10 }}
+                transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
+                className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 md:w-28 md:h-28 rounded-full bg-amber-500/15 border-2 border-amber-400/40 dark:border-amber-500/40 animate-pulse">
-                  <Coffee className="w-8 h-8 md:w-14 md:h-14 text-amber-500 dark:text-amber-400" />
+                <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-amber-400/20 border-4 border-amber-400/50 dark:border-amber-500/50 shadow-[0_0_80px_rgba(245,158,11,0.25)]">
+                  <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
+                    <Coffee style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-amber-500 dark:text-amber-400" />
+                  </motion.div>
                 </div>
-                <div>
-                  <h1 className="text-4xl md:text-8xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{t('tv.on.break')}</h1>
-                  <p className="text-base md:text-2xl font-bold text-slate-500 dark:text-slate-400 mt-2 md:mt-3">{t('tv.on.break.subtitle')}</p>
-                  <p className="text-sm md:text-lg text-slate-400 dark:text-slate-500 mt-1">{t('tv.on.break.wait')}</p>
+                <div className="space-y-3 md:space-y-5">
+                  <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-amber-600 dark:text-amber-400 tracking-tight leading-none">{t('tv.on.break')}</h1>
+                  <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">{t('tv.on.break.subtitle')}</p>
+                  <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold">{t('tv.on.break.wait')}</p>
                 </div>
-                <div className="flex items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500">
-                  <Pause className="w-4 h-4 md:w-5 md:h-5" />
-                  <span className="text-xs md:text-sm font-semibold uppercase tracking-wider">{t('tv.queue.paused')}</span>
-                  <Pause className="w-4 h-4 md:w-5 md:h-5" />
+                <div className="flex items-center justify-center gap-3 md:gap-4 text-amber-500/70 dark:text-amber-400/60">
+                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-400 animate-ping" />
+                  <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">{t('tv.queue.paused')}</span>
+                  <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-400 animate-ping" style={{ animationDelay: '0.5s' }} />
                 </div>
               </motion.div>
             </motion.div>
@@ -480,42 +488,60 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
     );
   }
 
-  // ── Single Doctor TV Display (Pixel TV optimized) ──
+  // ── Single Doctor TV Display (Digital Signage optimized) ──
   return (
     <div className="h-full bg-slate-50 dark:bg-surface-dark text-slate-900 dark:text-white flex flex-col relative overflow-hidden transition-colors duration-300">
       {/* Ambient blurs */}
-      <div className="absolute top-1/4 left-1/4 w-[200px] h-[200px] md:w-[500px] md:h-[500px] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[200px] h-[200px] md:w-[500px] md:h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-indigo-500/8 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-emerald-500/8 rounded-full blur-3xl pointer-events-none" />
 
-      {/* ── On Break Overlay ── */}
+      {/* ── On Break Overlay (Digital Signage — beautiful break screen) ── */}
       <AnimatePresence>
         {queueDay?.status === 'paused' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-xl bg-white/60 dark:bg-surface-dark/80"
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-amber-50/80 via-white/70 to-orange-50/80 dark:from-surface-dark/90 dark:via-surface-dark/85 dark:to-amber-950/30"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="text-center space-y-4 md:space-y-6 px-4"
+              initial={{ scale: 0.88, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: -10 }}
+              transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
+              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
             >
-              <div className="inline-flex items-center justify-center w-16 h-16 md:w-28 md:h-28 rounded-full bg-amber-500/15 border-2 border-amber-400/40 dark:border-amber-500/40 animate-pulse">
-                <Coffee className="w-8 h-8 md:w-14 md:h-14 text-amber-500 dark:text-amber-400" />
+              {/* Large pulsing icon */}
+              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-amber-400/20 border-4 border-amber-400/50 dark:border-amber-500/50 shadow-[0_0_80px_rgba(245,158,11,0.25)]">
+                <motion.div
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <Coffee className="w-14 h-14 md:w-22 md:h-22 lg:w-28 lg:h-28 text-amber-500 dark:text-amber-400" style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} />
+                </motion.div>
               </div>
-              <div>
-                <h1 className="text-4xl md:text-8xl font-black text-amber-600 dark:text-amber-400 tracking-tight">{t('tv.on.break')}</h1>
-                <p className="text-base md:text-2xl font-bold text-slate-500 dark:text-slate-400 mt-2 md:mt-3">{t('tv.on.break.subtitle')}</p>
-                <p className="text-sm md:text-lg text-slate-400 dark:text-slate-500 mt-1">{t('tv.on.break.wait')}</p>
+
+              {/* Bangla primary message — largest */}
+              <div className="space-y-3 md:space-y-5">
+                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-amber-600 dark:text-amber-400 tracking-tight leading-none">
+                  {t('tv.on.break')}
+                </h1>
+                {/* English secondary message */}
+                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">
+                  {t('tv.on.break.subtitle')}
+                </p>
+                {/* "Resume shortly" copy — generic */}
+                <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
+                  {t('tv.on.break.wait')}
+                </p>
               </div>
-              <div className="flex items-center justify-center gap-2 md:gap-3 text-slate-400 dark:text-slate-500">
-                <Pause className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="text-xs md:text-sm font-semibold uppercase tracking-wider">{t('tv.queue.paused')}</span>
-                <Pause className="w-4 h-4 md:w-5 md:h-5" />
+
+              {/* Paused indicator */}
+              <div className="flex items-center justify-center gap-3 md:gap-4 text-amber-500/70 dark:text-amber-400/60">
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-400 animate-ping" />
+                <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">{t('tv.queue.paused')}</span>
+                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-400 animate-ping" style={{ animationDelay: '0.5s' }} />
               </div>
             </motion.div>
           </motion.div>
@@ -554,30 +580,52 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-5 lg:gap-8 px-4 md:px-6 lg:px-10 py-3 md:py-4 flex-1 min-h-0 items-stretch relative z-10 overflow-hidden">
-        {/* Left: Doctor Info + Now Calling */}
-        <div className="lg:col-span-1 bg-white/70 dark:bg-surface-card/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-4 md:p-6 flex flex-col items-center text-center shadow-premium">
-          <div className="flex items-center gap-1.5 md:gap-2 text-indigo-600 dark:text-indigo-400 font-bold tracking-widest text-[10px] md:text-sm uppercase animate-pulse mb-3 md:mb-5">
-            <Volume2 className="w-4 h-4 md:w-5 md:h-5" /> {t('tv.live')}
+        {/* Left: Doctor Info (2nd most important) + Now Calling (1st) */}
+        <div className="lg:col-span-1 bg-white/70 dark:bg-surface-card/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-4 md:p-6 lg:p-8 flex flex-col items-center text-center shadow-premium min-h-0">
+          <div className="flex items-center gap-1.5 md:gap-2 text-indigo-600 dark:text-indigo-400 font-bold tracking-widest text-[10px] md:text-sm uppercase mb-3 md:mb-5">
+            <Volume2 className="w-4 h-4 md:w-5 md:h-5 animate-pulse" /> {t('tv.live')}
           </div>
 
-          <div className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-4 md:p-6 rounded-xl flex items-center gap-4 md:gap-6 mb-3 md:mb-5 text-left">
-            <img src={getSetting('doctor_image') ? `${getStorageBaseUrl()}/storage/${getSetting('doctor_image')}` : '/doctor_portrait.png'} alt="Doctor" className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-xl object-cover border border-slate-200 dark:border-slate-700/50 shrink-0" />
-            <div className="min-w-0">
-              <h3 className="font-bold text-lg md:text-2xl lg:text-3xl text-slate-900 dark:text-white truncate">{doctors.find((d) => d.id === selectedDoctorId)?.name}</h3>
-              <p className="text-indigo-600 dark:text-indigo-400 text-sm md:text-lg font-semibold uppercase tracking-wider truncate">{doctors.find((d) => d.id === selectedDoctorId)?.specialization}</p>
+          {/* Doctor Info Card — 2nd most important, enlarged */}
+          <div className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-5 md:p-7 lg:p-8 rounded-xl flex flex-col items-center gap-4 md:gap-5 mb-4 md:mb-6 text-center">
+            {/* Doctor photo +30% */}
+            <img
+              src={getSetting('doctor_image') ? `${getStorageBaseUrl()}/storage/${getSetting('doctor_image')}` : '/doctor_portrait.png'}
+              alt="Doctor"
+              className="w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-44 xl:h-44 rounded-2xl object-cover border-2 border-slate-200 dark:border-slate-700/50 shadow-md shrink-0"
+            />
+            <div className="min-w-0 w-full">
+              {/* Doctor name +50%, bold */}
+              <h3 className="font-black text-xl md:text-3xl lg:text-4xl xl:text-5xl text-slate-900 dark:text-white leading-tight">
+                {doctors.find((d) => d.id === selectedDoctorId)?.name}
+              </h3>
+              {/* Specialization +40% */}
+              <p className="text-indigo-600 dark:text-indigo-400 text-sm md:text-xl lg:text-2xl xl:text-3xl font-bold uppercase tracking-wide mt-1 md:mt-2">
+                {doctors.find((d) => d.id === selectedDoctorId)?.specialization}
+              </p>
             </div>
           </div>
 
-          <div className="h-px bg-slate-200 dark:bg-slate-700/80 w-full mb-3 md:mb-5" />
+          <div className="h-px bg-slate-200 dark:bg-slate-700/80 w-full mb-4 md:mb-5" />
 
-          <div className="space-y-2 md:space-y-3 w-full">
-            <p className="text-[10px] md:text-sm text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{t('tv.now.calling')}</p>
+          {/* Now Calling — serial is hero but ~20% smaller than before */}
+          <div className="space-y-2 md:space-y-4 w-full">
+            <p className="text-[10px] md:text-sm lg:text-base text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">{t('tv.now.calling')}</p>
             <AnimatePresence mode="wait">
               {activeItem ? (
-                <motion.div key={activeItem.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-3 md:p-6 lg:p-8 rounded-xl flex items-center gap-3 md:gap-5 lg:gap-6">
-                  <span className="text-3xl md:text-5xl lg:text-7xl font-black leading-none text-indigo-600 dark:text-indigo-400">#{activeItem.serial_no}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-base md:text-2xl lg:text-4xl font-black text-slate-900 dark:text-white truncate">{activeItem.patient.name}</div>
+                <motion.div
+                  key={activeItem.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-3 md:p-5 lg:p-6 rounded-xl flex items-center gap-3 md:gap-4 lg:gap-5"
+                >
+                  {/* Serial: hero but ~20% reduced — text-6xl instead of text-7xl at lg */}
+                  <span className="text-3xl md:text-5xl lg:text-6xl font-black leading-none text-indigo-600 dark:text-indigo-400 shrink-0">
+                    #{activeItem.serial_no}
+                  </span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="text-base md:text-xl lg:text-3xl font-black text-slate-900 dark:text-white truncate">{activeItem.patient.name}</div>
                   </div>
                 </motion.div>
               ) : (
@@ -598,45 +646,48 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
           )}
         </div>
 
-        {/* Right: Up Next — BIG for TV viewing */}
-        <div className="lg:col-span-2 bg-white/70 dark:bg-surface-card/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-4 md:p-6 lg:p-8 flex flex-col shadow-premium">
-          <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 md:mb-4 flex items-center gap-2 md:gap-4 shrink-0">
-            <UserCheck className="w-5 h-5 md:w-7 md:h-7 lg:w-10 lg:h-10 text-indigo-600 dark:text-indigo-400" /> {t('tv.up.next')}
+        {/* Right: Up Next — optimized for large-screen readability */}
+        <div className="lg:col-span-2 bg-white/70 dark:bg-surface-card/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-4 md:p-6 lg:p-8 flex flex-col shadow-premium min-h-0">
+          <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 md:mb-5 flex items-center gap-2 md:gap-4 shrink-0">
+            <UserCheck className="w-5 h-5 md:w-7 md:h-7 lg:w-9 lg:h-9 text-indigo-600 dark:text-indigo-400" /> {t('tv.up.next')}
           </h2>
-          <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+          {/* Queue list — no inner scroll; clamped to available height */}
+          <div className="flex-1 min-h-0 overflow-hidden">
             {waitingItems.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm md:text-lg font-semibold">{t('tv.no.waiting')}</div>
+              <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm md:text-xl font-semibold">{t('tv.no.waiting')}</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 h-full auto-rows-fr">
                 {waitingItems.map((item, index) => {
                   const showPlaceholder = (index + 1) % 4 === 0 && index < waitingItems.length - 1;
                   return (
                   <React.Fragment key={item.id}>
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`bg-slate-50 dark:bg-slate-800/30 border p-3 md:p-6 lg:p-8 rounded-xl flex items-center gap-3 md:gap-5 lg:gap-6 ${
+                    transition={{ delay: index * 0.08 }}
+                    className={`bg-slate-50 dark:bg-slate-800/30 border p-4 md:p-6 lg:p-8 rounded-xl flex items-center gap-4 md:gap-5 lg:gap-7 ${
                       index === 0
-                        ? 'border-indigo-500/50 ring-2 ring-indigo-500/20'
+                        ? 'border-indigo-500/60 ring-2 ring-indigo-500/25 bg-indigo-50/40 dark:bg-indigo-950/20'
                         : item.priority === 'Reserved'
                         ? 'border-indigo-500/30 ring-1 ring-indigo-500/10'
-                        : 'border-slate-200 dark:border-slate-700/50'
+                        : 'border-slate-200 dark:border-slate-700/60'
                     }`}
                   >
-                    <span className={`text-3xl md:text-5xl lg:text-7xl font-black leading-none ${
+                    {/* Serial — ~20% smaller than before (text-6xl not text-7xl at lg) */}
+                    <span className={`text-3xl md:text-5xl lg:text-6xl font-black leading-none shrink-0 ${
                       index === 0 ? 'text-indigo-600 dark:text-indigo-400'
                       : item.priority === 'Reserved' ? 'text-indigo-400 dark:text-indigo-500'
                       : 'text-slate-400 dark:text-slate-500'
                     }`}>#{item.serial_no}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-base md:text-2xl lg:text-4xl font-black text-slate-900 dark:text-white truncate">{item.patient.name}</div>
-                      <div className="flex items-center gap-1.5 md:gap-2 mt-1 md:mt-2">
+                      {/* Patient name — cleaner contrast */}
+                      <div className="text-base md:text-xl lg:text-3xl font-black text-slate-900 dark:text-white truncate leading-tight">{item.patient.name}</div>
+                      <div className="flex items-center gap-2 mt-1.5 md:mt-2">
                         {item.priority === 'Reserved' && (
-                          <span className="bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 text-[10px] md:text-sm font-bold px-1.5 md:px-2 py-0.5 rounded-full">{t('tv.reserved')}</span>
+                          <span className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs md:text-sm font-bold px-2 py-0.5 rounded-full">{t('tv.reserved')}</span>
                         )}
                         {item.priority === 'Emergency' && (
-                          <span className="bg-rose-500/10 text-rose-500 dark:text-rose-400 text-[10px] md:text-sm font-bold px-1.5 md:px-2 py-0.5 rounded-full">{t('tv.emergency')}</span>
+                          <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs md:text-sm font-bold px-2 py-0.5 rounded-full">{t('tv.emergency')}</span>
                         )}
                       </div>
                     </div>
@@ -647,11 +698,11 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ delay: (index + 1) * 0.1 }}
-                      className="p-3 md:p-4 lg:p-5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700/50 flex items-center justify-center gap-2 md:gap-3 col-span-1"
+                      transition={{ delay: (index + 1) * 0.08 }}
+                      className="p-4 md:p-5 lg:p-6 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700/50 flex items-center justify-center gap-2 md:gap-3 col-span-1"
                     >
                       <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-slate-300 dark:text-slate-600" />
-                      <span className="text-[10px] md:text-sm font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">
+                      <span className="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600">
                         {t('tv.reserved.slot')}
                       </span>
                     </motion.div>
@@ -665,12 +716,13 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="bg-white/70 dark:bg-surface-card/40 border border-slate-200/80 dark:border-slate-700/80 mx-4 md:mx-6 lg:mx-10 mb-3 md:mb-4 p-2 md:p-4 lg:p-5 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-2 md:gap-4 shrink-0 relative z-10">
-        <span className="bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 text-sm md:text-xl lg:text-2xl font-black uppercase tracking-wider px-3 md:px-4 lg:px-5 py-1.5 md:py-2.5 rounded-lg shrink-0">
+      {/* Footer / Announcements — improved typography, no jitter */}
+      <div className="bg-white/70 dark:bg-surface-card/40 border border-slate-200/80 dark:border-slate-700/80 mx-4 md:mx-6 lg:mx-10 mb-3 md:mb-4 p-3 md:p-4 lg:p-5 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-5 shrink-0 relative z-10">
+        <span className="bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-sm md:text-xl lg:text-2xl font-black uppercase tracking-wider px-3 md:px-5 lg:px-6 py-1.5 md:py-2.5 rounded-lg shrink-0 whitespace-nowrap">
           {t('footer.notice')}
         </span>
-        <div className="text-sm md:text-2xl lg:text-4xl font-black text-slate-700 dark:text-slate-300 text-center animate-pulse leading-tight">
+        {/* Ticker text — steady, no pulse-jitter, high readability */}
+        <div className="text-sm md:text-2xl lg:text-3xl xl:text-4xl font-bold text-slate-700 dark:text-slate-200 text-center leading-snug tracking-wide">
           {t('reception.print.footer')}
         </div>
       </div>
