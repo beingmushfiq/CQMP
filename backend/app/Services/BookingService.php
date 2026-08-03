@@ -19,9 +19,8 @@ class BookingService
         $dateStr = Carbon::parse($date)->format('Ymd');
         $prefix = "BK-{$dateStr}-";
 
-        return DB::transaction(function () use ($prefix, $date) {
-            $latest = Booking::where('booking_date', $date)
-                ->where('booking_number', 'LIKE', "{$prefix}%")
+        return DB::transaction(function () use ($prefix) {
+            $latest = Booking::where('booking_number', 'LIKE', "{$prefix}%")
                 ->latest('id')
                 ->lockForUpdate()
                 ->first();
@@ -41,25 +40,45 @@ class BookingService
     public function validateBookingRequest(array $data, bool $isPublic = false): void
     {
         $bookingDate = Carbon::parse($data['booking_date'])->toDateString();
+        $today = Carbon::today()->toDateString();
         $tomorrow = Carbon::tomorrow()->toDateString();
 
-        // 1. Booking window check (Currently restricted to tomorrow for public/default settings)
-        $maxWindow = (int) Setting::get('booking_window_days', 1);
-        $maxDate = Carbon::today()->addDays($maxWindow)->toDateString();
+        if ($isPublic) {
+            // 1. Booking window check (Currently restricted to tomorrow for public/default settings)
+            $maxWindow = (int) Setting::get('booking_window_days', 1);
+            $maxDate = Carbon::today()->addDays($maxWindow)->toDateString();
 
-        if ($bookingDate < $tomorrow || $bookingDate > $maxDate) {
-            throw ValidationException::withMessages([
-                'booking_date' => ["Bookings are currently only allowed for tomorrow ({$tomorrow})."],
-            ]);
-        }
+            if ($bookingDate < $tomorrow || $bookingDate > $maxDate) {
+                throw ValidationException::withMessages([
+                    'booking_date' => ["Bookings are currently only allowed for tomorrow ({$tomorrow})."],
+                ]);
+            }
 
-        // 2. Cutoff time check for booking tomorrow
-        $cutoffTimeStr = Setting::get('booking_cutoff_time', '22:00');
-        $cutoffTime = Carbon::createFromTimeString($cutoffTimeStr);
-        if (now()->isAfter($cutoffTime) && $bookingDate === $tomorrow) {
-            throw ValidationException::withMessages([
-                'booking_date' => ["Bookings for tomorrow are closed as cutoff time ({$cutoffTimeStr}) has passed."],
-            ]);
+            // 2. Cutoff time check for booking tomorrow
+            $cutoffTimeStr = Setting::get('booking_cutoff_time', '22:00');
+            if (empty($cutoffTimeStr)) {
+                $cutoffTimeStr = '22:00';
+            }
+            try {
+                $cutoffTime = Carbon::createFromTimeString($cutoffTimeStr);
+                if (now()->isAfter($cutoffTime) && $bookingDate === $tomorrow) {
+                    throw ValidationException::withMessages([
+                        'booking_date' => ["Bookings for tomorrow are closed as cutoff time ({$cutoffTimeStr}) has passed."],
+                    ]);
+                }
+            } catch (\Carbon\Exceptions\InvalidFormatException|\Exception $e) {
+                if ($e instanceof ValidationException) {
+                    throw $e;
+                }
+                // Ignore invalid cutoff time string from settings
+            }
+        } else {
+            // Staff / Authenticated booking: cannot book past dates
+            if ($bookingDate < $today) {
+                throw ValidationException::withMessages([
+                    'booking_date' => ['Cannot create a booking for a past date.'],
+                ]);
+            }
         }
 
         // 3. Max capacity check
@@ -68,20 +87,22 @@ class BookingService
 
         if ($currentActiveCount >= $maxPerDay) {
             throw ValidationException::withMessages([
-                'booking_date' => ['Tomorrow is fully booked.'],
+                'booking_date' => ['Selected date is fully booked.'],
             ]);
         }
 
-        // 4. Duplicate booking check (Same phone & same date)
-        $exists = Booking::forDate($bookingDate)
-            ->where('patient_phone', $data['patient_phone'])
-            ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value, BookingStatus::CHECKED_IN->value])
-            ->exists();
+        // 4. Duplicate booking check (Same phone & same date - only if phone is provided)
+        if (! empty($data['patient_phone'])) {
+            $exists = Booking::forDate($bookingDate)
+                ->where('patient_phone', $data['patient_phone'])
+                ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value, BookingStatus::CHECKED_IN->value])
+                ->exists();
 
-        if ($exists) {
-            throw ValidationException::withMessages([
-                'patient_phone' => ['A booking already exists for this phone number for tomorrow.'],
-            ]);
+            if ($exists) {
+                throw ValidationException::withMessages([
+                    'patient_phone' => ['A booking already exists for this phone number for the selected date.'],
+                ]);
+            }
         }
     }
 
@@ -93,11 +114,12 @@ class BookingService
         $bookingNumber = $this->generateBookingNumber($bookingDate);
 
         // Find or create patient record if phone is given
+        $patientPhone = ! empty($data['patient_phone']) ? trim($data['patient_phone']) : '';
         $patient = null;
-        if (! empty($data['patient_phone'])) {
+        if (! empty($patientPhone)) {
             $patient = Patient::firstOrCreate(
-                ['phone' => $data['patient_phone']],
-                ['name' => $data['patient_name']]
+                ['phone' => $patientPhone],
+                ['name'  => $data['patient_name']]
             );
         }
 
@@ -109,11 +131,11 @@ class BookingService
             'doctor_id'      => $data['doctor_id'],
             'patient_id'     => $patient?->id,
             'patient_name'   => $data['patient_name'],
-            'patient_phone'  => $data['patient_phone'],
+            'patient_phone'  => $patientPhone,
             'patient_type'   => $data['patient_type'] ?? 'New',
             'booking_date'   => $bookingDate,
-            'preferred_slot' => $data['preferred_slot'] ?? null,
-            'remarks'        => $data['remarks'] ?? null,
+            'preferred_slot' => ! empty($data['preferred_slot']) ? $data['preferred_slot'] : null,
+            'remarks'        => ! empty($data['remarks']) ? $data['remarks'] : null,
             'status'         => $initialStatus,
             'confirmed_at'   => $autoConfirm ? now() : null,
             'confirmed_by'   => $autoConfirm ? $actor?->id : null,
@@ -195,6 +217,12 @@ class BookingService
         return $booking;
     }
 
+    public function delete(Booking $booking, User $actor): void
+    {
+        $this->broadcast('booking.deleted', $booking);
+        $booking->delete();
+    }
+
     private function broadcast(string $event, Booking $booking): void
     {
         try {
@@ -226,9 +254,13 @@ class BookingService
 
         if (! $template) return;
 
+        $formattedDate = $booking->booking_date instanceof \DateTimeInterface
+            ? $booking->booking_date->format('Y-m-d')
+            : Carbon::parse($booking->booking_date)->format('Y-m-d');
+
         $message = str_replace(
             ['{booking_number}', '{date}', '{patient_name}'],
-            [$booking->booking_number, $booking->booking_date->format('Y-m-d'), $booking->patient_name],
+            [$booking->booking_number, $formattedDate, $booking->patient_name],
             $template
         );
 

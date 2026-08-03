@@ -133,6 +133,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{booking}/check-in', [\App\Http\Controllers\Api\BookingController::class, 'checkIn'])->name('check-in');
                 Route::post('/{booking}/no-show', [\App\Http\Controllers\Api\BookingController::class, 'noShow'])->name('no-show');
                 Route::post('/convert-today', [\App\Http\Controllers\Api\BookingController::class, 'convert'])->name('convert');
+                Route::delete('/{booking}', [\App\Http\Controllers\Api\BookingController::class, 'destroy'])->name('destroy');
             });
         });
 

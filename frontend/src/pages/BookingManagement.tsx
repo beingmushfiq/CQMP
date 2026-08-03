@@ -13,7 +13,8 @@ import {
   User,
   RefreshCw,
   Tag,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { useBookings, type BookingItem } from '../hooks/useBookings';
 
@@ -37,6 +38,7 @@ export const BookingManagement: React.FC = () => {
     cancelBooking,
     checkInBooking,
     noShowBooking,
+    deleteBooking,
   } = useBookings(selectedDate);
 
   const filteredBookings = bookings.filter((b) => {
@@ -294,6 +296,18 @@ export const BookingManagement: React.FC = () => {
                     </button>
                   </>
                 )}
+
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete booking ${b.booking_number}?`)) {
+                      deleteBooking(b.id);
+                    }
+                  }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                  title="Delete Booking"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </motion.div>
           ))}

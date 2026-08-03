@@ -124,6 +124,12 @@ export function useBookings(selectedDate?: string, selectedDoctorId?: number | n
     return res.data.booking;
   };
 
+  const deleteBooking = async (id: number) => {
+    const res = await api.delete(`/bookings/${id}`);
+    await fetchBookings();
+    return res.data;
+  };
+
   return {
     bookings,
     stats,
@@ -135,5 +141,6 @@ export function useBookings(selectedDate?: string, selectedDoctorId?: number | n
     cancelBooking,
     checkInBooking,
     noShowBooking,
+    deleteBooking,
   };
 }
