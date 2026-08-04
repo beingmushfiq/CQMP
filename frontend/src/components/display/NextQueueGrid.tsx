@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, Clock } from 'lucide-react';
+import { Users } from 'lucide-react';
 import type { QueueItem } from '../../store/useQueueStore';
 
 interface NextQueueGridProps {
@@ -11,11 +11,6 @@ export const NextQueueGrid: React.FC<NextQueueGridProps> = React.memo(({ items }
   // Max 5 upcoming patients
   const upcoming = items.filter((i) => i.status === 'Waiting').slice(0, 5);
 
-  // Use the last item's estimated_wait (cumulative backend value) if available,
-  // otherwise fall back to count × 10min assumption
-  const avgWaitPerPatient = 10;
-  const lastItem = upcoming[upcoming.length - 1];
-  const totalWaitTime = lastItem?.estimated_wait ?? upcoming.length * avgWaitPerPatient;
 
   return (
     <div className="w-full h-full bg-slate-900/90 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-2xl space-y-4 min-h-0 overflow-hidden">
@@ -96,23 +91,7 @@ export const NextQueueGrid: React.FC<NextQueueGridProps> = React.memo(({ items }
             })}
           </div>
 
-          {/* Dedicated Wait Time Card — always full-width below the patient grid */}
-          <div className="bg-gradient-to-br from-slate-800/90 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 md:p-5 flex items-center gap-4 shadow-xl shrink-0">
-            <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center shrink-0">
-              <Clock className="w-6 h-6 text-indigo-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                Est. Average Wait Time
-              </div>
-              <div
-                style={{ fontSize: 'clamp(28px, 2.5vw, 40px)' }}
-                className="font-black text-white leading-none tracking-tight mt-1"
-              >
-                ~{totalWaitTime} <span className="text-indigo-400 text-lg font-bold">mins</span>
-              </div>
-            </div>
-          </div>
+
         </>
       )}
     </div>

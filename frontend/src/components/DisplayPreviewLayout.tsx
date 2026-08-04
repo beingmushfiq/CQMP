@@ -39,8 +39,57 @@ export const DisplayPreviewLayout: React.FC<DisplayPreviewLayoutProps> = ({ onTa
         </div>
       </div>
 
-      {/* Embedded TV Viewport */}
-      <div className="flex-1 min-h-0 relative bg-slate-950">
+      {/* Scaled TV Viewport — renders at 1280×720, scaled to fit */}
+      <div className="flex-1 min-h-0 relative bg-slate-950 flex items-center justify-center overflow-hidden p-4">
+        <TvScaledViewport />
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Renders TvDisplay at its native 1280×720 TV resolution
+ * and scales it down to fit the available preview space using CSS transform.
+ * This ensures every pixel, font-size, and layout looks exactly as it
+ * would on a real 32" Google TV.
+ */
+const TV_WIDTH = 1280;
+const TV_HEIGHT = 720;
+
+const TvScaledViewport: React.FC = () => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [scale, setScale] = React.useState(1);
+
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      const scaleX = width / TV_WIDTH;
+      const scaleY = height / TV_HEIGHT;
+      setScale(Math.min(scaleX, scaleY));
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    /* Outer container fills the preview area */
+    <div ref={containerRef} className="w-full h-full flex items-center justify-center">
+      {/* Fixed 16:9 aspect shell that the scale is applied to */}
+      <div
+        style={{
+          width: TV_WIDTH,
+          height: TV_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+          // Keep the element in flow at the scaled-down size so the container doesn't overflow
+          flexShrink: 0,
+        }}
+        className="rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.8)] ring-1 ring-slate-700/60"
+      >
         <TvDisplay embedded />
       </div>
     </div>
