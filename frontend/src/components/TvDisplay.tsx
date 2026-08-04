@@ -491,7 +491,10 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const currentDoctor = doctors.find((d) => d.id === selectedDoctorId);
 
   return (
-    <div className="w-screen h-screen max-w-[100vw] max-h-[100vh] bg-slate-950 text-white flex flex-col justify-between relative overflow-hidden select-none p-[32px] box-border transition-colors duration-300">
+    <div
+      className="w-full h-full bg-slate-950 text-white flex flex-col justify-between relative overflow-hidden select-none transition-colors duration-300"
+      style={{ containerType: 'size', padding: '2.5cqh 2.5cqw', boxSizing: 'border-box' }}
+    >
       {/* Ambient Signage Background Glows */}
       <div className="absolute top-1/4 left-1/4 w-[30vw] h-[30vw] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -507,10 +510,10 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
         isPublicView={isPublicView}
       />
 
-      {/* ── Main Layout Canvas (1366x768 baseline, 12-Column Grid) ── */}
-      <div className="flex-1 min-h-0 grid grid-cols-12 gap-6 my-2 items-stretch overflow-hidden">
-        {/* Left Column (5 Cols): Doctor Info Card (#2 Focus) + Current Serial Hero (Calling Hero, 90-120px) */}
-        <div className="col-span-5 flex flex-col gap-5 min-h-0 overflow-hidden">
+      {/* ── Main Layout Canvas (12-Column Grid) ── */}
+      <div className="flex-1 min-h-0 grid grid-cols-12 items-stretch overflow-hidden" style={{ gap: '2cqw', margin: '1.5cqh 0' }}>
+        {/* Left Column (5 Cols): Doctor Info Card + Current Serial Hero */}
+        <div className="col-span-5 flex flex-col min-h-0 overflow-hidden" style={{ gap: '1.5cqh' }}>
           <DoctorInfoCard doctor={currentDoctor} />
           <CurrentSerialHero
             activeItem={activeItem}
@@ -518,7 +521,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
           />
         </div>
 
-        {/* Right Column (7 Cols): Next Queue Cards (Max 5 Patients) + Dedicated Wait Time Card */}
+        {/* Right Column (7 Cols): Next Queue Cards (Max 5 Patients) */}
         <div className="col-span-7 flex flex-col min-h-0 overflow-hidden">
           <NextQueueGrid items={items} />
         </div>

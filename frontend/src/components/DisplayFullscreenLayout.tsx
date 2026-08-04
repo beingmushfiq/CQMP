@@ -74,9 +74,11 @@ export const DisplayFullscreenLayout: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-slate-50 dark:bg-surface-dark overflow-hidden relative">
-      {/* ── Full-height Display ── */}
-      <TvDisplay />
+    <div className="h-screen w-screen overflow-hidden relative bg-slate-950">
+      {/* ── Full-height Display — fills this w-screen h-screen shell ── */}
+      <div className="w-full h-full">
+        <TvDisplay />
+      </div>
 
       {/* ── Floating Control Bar (auto-hides on idle) ── */}
       <AnimatePresence>
