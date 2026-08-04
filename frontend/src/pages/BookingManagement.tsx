@@ -45,9 +45,9 @@ export const BookingManagement: React.FC = () => {
     const matchesStatus = selectedStatus === 'All' || b.status === selectedStatus;
     const matchesSearch =
       !searchQuery ||
-      b.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.patient_phone.includes(searchQuery) ||
-      b.booking_number.toLowerCase().includes(searchQuery.toLowerCase());
+      (b.patient_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (b.patient_phone || '').includes(searchQuery) ||
+      (b.booking_number || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 

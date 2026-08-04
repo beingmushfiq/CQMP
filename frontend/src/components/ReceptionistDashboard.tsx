@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import api from '../utils/api';
-import { Search, UserPlus, ShieldAlert, ArrowDownUp, PhoneCall, Printer, Trash2, CheckCircle2, SkipForward, X, AlertTriangle, Bookmark, Pause, Play, Volume2, VolumeX, Coffee, Monitor, FileText } from 'lucide-react';
+import { Search, UserPlus, ShieldAlert, ArrowDownUp, PhoneCall, Printer, Trash2, CheckCircle2, SkipForward, X, AlertTriangle, Bookmark, Pause, Play, Volume2, VolumeX, Coffee, Monitor, FileText, Pencil, Check } from 'lucide-react';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { useDisplayModeContext } from './DisplayModeContext';
 import { AudioControlPanel } from './AudioControlPanel';
@@ -74,6 +74,29 @@ export const ReceptionistDashboard: React.FC = () => {
     return saved !== 'false'; // defaults to true
   });
   const lastAnnouncedSerialRef = useRef<number | null>(null);
+
+  const renamePatient = async (patientId: number, newName: string) => {
+    if (!newName.trim()) return;
+    try {
+      await api.put(`/patients/${patientId}`, { name: newName.trim() });
+      if (selectedDoctorId) fetchTodayQueue(selectedDoctorId);
+      setToast({ message: `Name updated to "${newName.trim()}".`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ message: 'Failed to update patient name.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setEditingNameItemId(null);
+      setEditingNameValue('');
+    }
+  };
+
+  // Focus inline name edit input when it appears
+  useEffect(() => {
+    if (editingNameItemId !== null) {
+      setTimeout(() => editingNameInputRef.current?.focus(), 50);
+    }
+  }, [editingNameItemId]);
 
   const speakAnnouncement = (serialNo: number, force = false) => {
     if (!isAudioEnabled && !force) return;
@@ -338,29 +361,6 @@ export const ReceptionistDashboard: React.FC = () => {
       },
     });
   };
-
-  const renamePatient = async (patientId: number, newName: string) => {
-    if (!newName.trim()) return;
-    try {
-      await api.put(`/patients/${patientId}`, { name: newName.trim() });
-      if (selectedDoctorId) fetchTodayQueue(selectedDoctorId);
-      setToast({ message: `Name updated to "${newName.trim()}".`, type: 'success' });
-      setTimeout(() => setToast(null), 3000);
-    } catch {
-      setToast({ message: 'Failed to update patient name.', type: 'error' });
-      setTimeout(() => setToast(null), 3000);
-    } finally {
-      setEditingNameItemId(null);
-      setEditingNameValue('');
-    }
-  };
-
-  // Focus inline name edit input when it appears
-  useEffect(() => {
-    if (editingNameItemId !== null) {
-      setTimeout(() => editingNameInputRef.current?.focus(), 50);
-    }
-  }, [editingNameItemId]);
 
   const AudioToggle = () => (
     <button
@@ -741,7 +741,45 @@ export const ReceptionistDashboard: React.FC = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-sm text-indigo-600 dark:text-indigo-400">#{item.serial_no}</span>
-                            <span className="font-semibold text-xs text-slate-900 dark:text-white">{item.patient.name}</span>
+                            {editingNameItemId === item.id ? (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <input
+                                  ref={editingNameInputRef}
+                                  type="text"
+                                  value={editingNameValue}
+                                  onChange={(e) => setEditingNameValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') renamePatient(item.patient.id, editingNameValue);
+                                    if (e.key === 'Escape') { setEditingNameItemId(null); setEditingNameValue(''); }
+                                  }}
+                                  className="flex-1 bg-white dark:bg-slate-800 border border-indigo-500 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 min-w-0"
+                                />
+                                <button
+                                  onClick={() => renamePatient(item.patient.id, editingNameValue)}
+                                  disabled={!editingNameValue.trim()}
+                                  className="p-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white cursor-pointer transition-all"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => { setEditingNameItemId(null); setEditingNameValue(''); }}
+                                  className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 cursor-pointer transition-all"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 group/name">
+                                <span className="font-semibold text-xs text-slate-900 dark:text-white">{item.patient.name}</span>
+                                <button
+                                  onClick={() => { setEditingNameItemId(item.id); setEditingNameValue(item.patient.name); }}
+                                  className="opacity-0 group-hover/name:opacity-100 p-0.5 rounded text-slate-400 hover:text-indigo-500 cursor-pointer transition-all"
+                                  title="Edit patient name"
+                                >
+                                  <Pencil className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            )}
                             {item.priority === 'Emergency' && (
                               <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] px-1.5 py-0.5 rounded-full font-bold">Emergency</span>
                             )}
