@@ -28,7 +28,7 @@ export const DisplayFullscreenLayout: React.FC = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [isAudioEnabled, setIsAudioEnabled] = useState(() => {
     const saved = localStorage.getItem('cqmp_audio_enabled');
-    return saved !== 'false';
+    return saved === 'true';
   });
 
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

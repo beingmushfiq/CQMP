@@ -64,7 +64,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [isAudioEnabled, setIsAudioEnabled] = useState(() => {
     const saved = localStorage.getItem('cqmp_audio_enabled');
-    return saved !== 'false'; // defaults to true
+    return saved === 'true'; // defaults to false
   });
 
   useEffect(() => {

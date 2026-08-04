@@ -71,7 +71,7 @@ export const ReceptionistDashboard: React.FC = () => {
   // Audio settings & logic
   const [isAudioEnabled, setIsAudioEnabled] = useState(() => {
     const saved = localStorage.getItem('cqmp_receptionist_audio_enabled');
-    return saved !== 'false'; // defaults to true
+    return saved === 'true'; // defaults to false
   });
   const lastAnnouncedSerialRef = useRef<number | null>(null);
 
