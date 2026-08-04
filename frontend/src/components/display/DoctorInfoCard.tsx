@@ -42,33 +42,33 @@ export const DoctorInfoCard: React.FC<DoctorInfoCardProps> = React.memo(({ docto
 
       {/* Doctor Information Sections — Ordered 1 to 4 with generous vertical spacing */}
       <div className="w-full flex flex-col items-center space-y-5 text-center px-2">
-        {/* 1. Doctor Name: 54–60px, Bold */}
+        {/* 1. Doctor Name: 22–30px, Bold — sized to fit card without clipping */}
         <h2
-          style={{ fontSize: 'clamp(54px, 4.5vw, 60px)' }}
-          className="font-bold text-white leading-tight tracking-tight drop-shadow-md text-balance"
+          style={{ fontSize: 'clamp(22px, 2vw, 30px)' }}
+          className="font-bold text-white leading-snug tracking-tight drop-shadow-md text-balance"
         >
           {doctorName}
         </h2>
 
-        {/* 2. Qualifications: 26–30px, Medium */}
+        {/* 2. Qualifications: 13–17px, Medium */}
         <div
-          style={{ fontSize: 'clamp(26px, 2.2vw, 30px)' }}
+          style={{ fontSize: 'clamp(13px, 1.2vw, 17px)' }}
           className="font-medium text-amber-200/90 leading-snug whitespace-pre-line tracking-wide"
         >
           {qualifications}
         </div>
 
-        {/* 3. Primary Specialization: 34–40px, Bold (ALL CAPS) */}
+        {/* 3. Primary Specialization: 18–24px, Bold (ALL CAPS) */}
         <h3
-          style={{ fontSize: 'clamp(34px, 2.8vw, 40px)' }}
+          style={{ fontSize: 'clamp(18px, 1.6vw, 24px)' }}
           className="font-bold text-indigo-400 leading-none tracking-widest uppercase py-1"
         >
           {specialization}
         </h3>
 
-        {/* 4. Expertise: 24–28px, Regular */}
+        {/* 4. Expertise: 12–15px, Regular */}
         <p
-          style={{ fontSize: 'clamp(24px, 2vw, 28px)' }}
+          style={{ fontSize: 'clamp(12px, 1.1vw, 15px)' }}
           className="font-normal text-slate-300 leading-relaxed text-balance max-w-xl"
         >
           {expertise}

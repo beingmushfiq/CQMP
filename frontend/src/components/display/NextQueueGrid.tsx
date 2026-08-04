@@ -11,9 +11,11 @@ export const NextQueueGrid: React.FC<NextQueueGridProps> = React.memo(({ items }
   // Max 5 upcoming patients
   const upcoming = items.filter((i) => i.status === 'Waiting').slice(0, 5);
 
-  // Calculate estimated wait time (assume ~10 mins per patient)
+  // Use the last item's estimated_wait (cumulative backend value) if available,
+  // otherwise fall back to count × 10min assumption
   const avgWaitPerPatient = 10;
-  const totalWaitTime = upcoming.length * avgWaitPerPatient;
+  const lastItem = upcoming[upcoming.length - 1];
+  const totalWaitTime = lastItem?.estimated_wait ?? upcoming.length * avgWaitPerPatient;
 
   return (
     <div className="w-full h-full bg-slate-900/90 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between shadow-2xl space-y-4 min-h-0 overflow-hidden">
@@ -28,16 +30,17 @@ export const NextQueueGrid: React.FC<NextQueueGridProps> = React.memo(({ items }
         </span>
       </div>
 
-      {/* Cards Layout Grid: 5 Upcoming Cards + 1 Dedicated Waiting Time Card */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr overflow-hidden">
-        {upcoming.length === 0 ? (
-          <div className="col-span-2 h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
-            <Users className="w-12 h-12 opacity-40 text-indigo-400" />
-            <span className="text-xl font-bold text-slate-400">No Waiting Patients</span>
-            <p className="text-sm">The queue is currently empty</p>
-          </div>
-        ) : (
-          <>
+      {upcoming.length === 0 ? (
+        /* Empty state — full area */
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-2">
+          <Users className="w-12 h-12 opacity-40 text-indigo-400" />
+          <span className="text-xl font-bold text-slate-400">No Waiting Patients</span>
+          <p className="text-sm">The queue is currently empty</p>
+        </div>
+      ) : (
+        <>
+          {/* Patient Cards Grid — 2-col, max 5 cards */}
+          <div className="flex-1 min-h-0 grid grid-cols-2 gap-4 auto-rows-fr overflow-hidden">
             {upcoming.map((item, index) => {
               const isFirst = index === 0;
               return (
@@ -54,7 +57,7 @@ export const NextQueueGrid: React.FC<NextQueueGridProps> = React.memo(({ items }
                       : 'bg-slate-800/60 border-slate-700/80'
                   }`}
                 >
-                  {/* Serial Number (clamp(40px, 4vw, 56px)) */}
+                  {/* Serial Number */}
                   <span
                     style={{ fontSize: 'clamp(40px, 4vw, 56px)' }}
                     className={`font-black leading-none shrink-0 tabular-nums ${
@@ -91,27 +94,27 @@ export const NextQueueGrid: React.FC<NextQueueGridProps> = React.memo(({ items }
                 </motion.div>
               );
             })}
+          </div>
 
-            {/* Dedicated Waiting Time Card */}
-            <div className="bg-gradient-to-br from-slate-800/90 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 md:p-5 flex items-center gap-4 shadow-xl">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center shrink-0">
-                <Clock className="w-6 h-6 text-indigo-400" />
+          {/* Dedicated Wait Time Card — always full-width below the patient grid */}
+          <div className="bg-gradient-to-br from-slate-800/90 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 md:p-5 flex items-center gap-4 shadow-xl shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6 text-indigo-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Est. Average Wait Time
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  Est. Average Wait Time
-                </div>
-                <div
-                  style={{ fontSize: 'clamp(28px, 2.5vw, 40px)' }}
-                  className="font-black text-white leading-none tracking-tight mt-1"
-                >
-                  ~{totalWaitTime} <span className="text-indigo-400 text-lg font-bold">mins</span>
-                </div>
+              <div
+                style={{ fontSize: 'clamp(28px, 2.5vw, 40px)' }}
+                className="font-black text-white leading-none tracking-tight mt-1"
+              >
+                ~{totalWaitTime} <span className="text-indigo-400 text-lg font-bold">mins</span>
               </div>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 });

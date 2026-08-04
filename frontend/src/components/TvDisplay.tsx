@@ -504,6 +504,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
         clock={clock}
         title={currentDoctor?.name || getSetting('doctor_name', 'CQMP Live Board')}
         subtitle={currentDoctor?.specialization || getSetting('doctor_specialization', 'Doctor Waiting Room')}
+        isPublicView={isPublicView}
       />
 
       {/* ── Main Layout Canvas (1366x768 baseline, 12-Column Grid) ── */}
