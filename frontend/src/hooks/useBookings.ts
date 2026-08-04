@@ -125,9 +125,18 @@ export function useBookings(selectedDate?: string, selectedDoctorId?: number | n
   };
 
   const deleteBooking = async (id: number) => {
-    const res = await api.delete(`/bookings/${id}`);
-    await fetchBookings();
-    return res.data;
+    try {
+      const res = await api.delete(`/bookings/${id}`);
+      await fetchBookings();
+      return res.data;
+    } catch (err: any) {
+      if (err.response?.status === 405) {
+        const res = await api.post(`/bookings/${id}/delete`);
+        await fetchBookings();
+        return res.data;
+      }
+      throw err;
+    }
   };
 
   return {

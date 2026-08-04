@@ -126,15 +126,15 @@ Route::prefix('v1')->group(function () {
                 ->middleware('role:Super Admin|Admin|Receptionist|Doctor')
                 ->name('show');
 
-            Route::middleware('role:Super Admin|Admin|Receptionist')->group(function () {
+            Route::middleware('role:Super Admin|Admin|Receptionist|Doctor')->group(function () {
                 Route::post('/', [\App\Http\Controllers\Api\BookingController::class, 'store'])->name('store');
                 Route::delete('/{booking}', [\App\Http\Controllers\Api\BookingController::class, 'destroy'])->name('destroy');
+                Route::post('/{booking}/delete', [\App\Http\Controllers\Api\BookingController::class, 'destroy'])->name('destroy.post');
                 Route::post('/{booking}/confirm', [\App\Http\Controllers\Api\BookingController::class, 'confirm'])->name('confirm');
                 Route::post('/{booking}/cancel', [\App\Http\Controllers\Api\BookingController::class, 'cancel'])->name('cancel');
                 Route::post('/{booking}/check-in', [\App\Http\Controllers\Api\BookingController::class, 'checkIn'])->name('check-in');
                 Route::post('/{booking}/no-show', [\App\Http\Controllers\Api\BookingController::class, 'noShow'])->name('no-show');
                 Route::post('/convert-today', [\App\Http\Controllers\Api\BookingController::class, 'convert'])->name('convert');
-                Route::delete('/{booking}', [\App\Http\Controllers\Api\BookingController::class, 'destroy'])->name('destroy');
             });
         });
 
