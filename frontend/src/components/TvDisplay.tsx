@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../store/useQueueStore';
 import { echo } from '../utils/echo';
 import api, { createPublicApi, getStorageBaseUrl } from '../utils/api';
-import { Monitor, Volume2, VolumeX, UserCheck, Play, Sun, Moon, Bookmark, Coffee, ShieldAlert, FileText, Loader2, LogOut, Maximize, Minimize, User } from 'lucide-react';
+import { Monitor, Volume2, VolumeX, Play, Sun, Moon, Coffee, LogOut, Maximize, Minimize, User } from 'lucide-react';
 
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -14,6 +14,13 @@ import { useDisplayModeContext } from './DisplayModeContext';
 import { useAudioSync } from '../hooks/useAudioSync';
 import { AudioTickerBanner } from './AudioTickerBanner';
 import { AudioAutoplayOverlay } from './AudioAutoplayOverlay';
+
+import { HeaderBar } from './display/HeaderBar';
+import { DoctorInfoCard } from './display/DoctorInfoCard';
+import { CurrentSerialHero } from './display/CurrentSerialHero';
+import { NextQueueGrid } from './display/NextQueueGrid';
+import { AnnouncementTicker } from './display/AnnouncementTicker';
+import { ModeOverlays } from './display/ModeOverlays';
 
 
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
@@ -34,11 +41,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
   // ── Centralized Display State Machine ──
   const displayState = useDisplayModeContext();
-  // True when an overlay mode is active (takes priority over queue rendering)
   const isBreakMode = displayState.mode === 'BREAK' || displayState.mode === 'LUNCH' || displayState.mode === 'PRAYER';
-  const isEmergencyMode = displayState.mode === 'EMERGENCY';
-  const isReportMode = displayState.mode === 'REPORT';
-  const isOfflineMode = displayState.mode === 'OFFLINE' || displayState.mode === 'MAINTENANCE';
 
   // Public API instance — used when no auth token is present (public TV view)
   const publicApi = React.useMemo(() => createPublicApi(), []);
@@ -262,8 +265,6 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
 
   const handleSelectDoctor = (id: number) => { setViewMode('single'); setSelectedDoctorId(id); };
 
-  const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no).slice(0, 5);
-
   // ── Audio toggle button (shared) ──
   const AudioToggle = () => (
     <button
@@ -486,357 +487,44 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
     );
   }
 
-  // ── Single Doctor TV Display (Digital Signage optimized for Smart TVs) ──
+  // ── Single Doctor TV Display (Commercial Digital Signage for 32" Google TV) ──
+  const currentDoctor = doctors.find((d) => d.id === selectedDoctorId);
+
   return (
-    <div className="w-screen h-screen max-w-[100vw] max-h-[100vh] bg-slate-950 text-white flex flex-col justify-between relative overflow-hidden select-none p-[2.5vw] lg:p-[2vw] box-border transition-colors duration-300">
-      {/* Ambient Signage Glows */}
+    <div className="w-screen h-screen max-w-[100vw] max-h-[100vh] bg-slate-950 text-white flex flex-col justify-between relative overflow-hidden select-none p-[32px] box-border transition-colors duration-300">
+      {/* Ambient Signage Background Glows */}
       <div className="absolute top-1/4 left-1/4 w-[30vw] h-[30vw] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* ── Display Mode Overlays (State Machine) ── */}
-      <AnimatePresence>
+      <ModeOverlays />
 
-        {/* BREAK / LUNCH / PRAYER overlay */}
-        {(isBreakMode || queueDay?.status === 'paused') && (
-          <motion.div
-            key="break-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-amber-50/80 via-white/70 to-orange-50/80 dark:from-surface-dark/90 dark:via-surface-dark/85 dark:to-amber-950/30"
-          >
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: -10 }}
-              transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
-              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
-            >
-              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-amber-400/20 border-4 border-amber-400/50 dark:border-amber-500/50 shadow-[0_0_80px_rgba(245,158,11,0.25)]">
-                <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
-                  <Coffee style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-amber-500 dark:text-amber-400" />
-                </motion.div>
-              </div>
-              <div className="space-y-3 md:space-y-5">
-                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-amber-600 dark:text-amber-400 tracking-tight leading-none">
-                  {displayState.title_bn || t('tv.on.break')}
-                </h1>
-                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">
-                  {displayState.title_en || t('tv.on.break.subtitle')}
-                </p>
-                <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
-                  {displayState.message_en || t('tv.on.break.wait')}
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-3 md:gap-4 text-amber-500/70 dark:text-amber-400/60">
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-400 animate-ping" />
-                <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">{t('tv.queue.paused')}</span>
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-400 animate-ping" style={{ animationDelay: '0.5s' }} />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
+      {/* ── Top Header Bar (Clock 32-40px & Socket Connection Status) ── */}
+      <HeaderBar
+        clock={clock}
+        title={currentDoctor?.name || getSetting('doctor_name', 'CQMP Live Board')}
+        subtitle={currentDoctor?.specialization || getSetting('doctor_specialization', 'Doctor Waiting Room')}
+      />
 
-        {/* EMERGENCY overlay */}
-        {isEmergencyMode && (
-          <motion.div
-            key="emergency-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-rose-50/90 via-white/80 to-red-50/90 dark:from-surface-dark/92 dark:via-surface-dark/88 dark:to-rose-950/40"
-          >
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: -10 }}
-              transition={{ duration: 0.35, delay: 0.05, ease: 'easeOut' }}
-              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
-            >
-              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-rose-500/20 border-4 border-rose-500/50 dark:border-rose-400/50 shadow-[0_0_80px_rgba(239,68,68,0.30)]">
-                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}>
-                  <ShieldAlert style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-rose-500 dark:text-rose-400" />
-                </motion.div>
-              </div>
-              <div className="space-y-3 md:space-y-5">
-                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none">
-                  {displayState.title_bn || 'জরুরি বিজ্ঞপ্তি'}
-                </h1>
-                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">
-                  {displayState.title_en || 'Emergency Notice'}
-                </p>
-                {displayState.message_en && (
-                  <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
-                    {displayState.message_en}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center justify-center gap-3 md:gap-4 text-rose-500/70 dark:text-rose-400/60">
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-rose-400 animate-ping" />
-                <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">Emergency</span>
-                <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-rose-400 animate-ping" style={{ animationDelay: '0.4s' }} />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* REPORT overlay */}
-        {isReportMode && (
-          <motion.div
-            key="report-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-indigo-50/80 via-white/70 to-slate-50/80 dark:from-surface-dark/90 dark:via-surface-dark/85 dark:to-indigo-950/30"
-          >
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: -10 }}
-              transition={{ duration: 0.4, delay: 0.08, ease: 'easeOut' }}
-              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
-            >
-              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-indigo-500/15 border-4 border-indigo-500/40 dark:border-indigo-400/40 shadow-[0_0_80px_rgba(99,102,241,0.20)]">
-                <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}>
-                  <FileText style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-indigo-500 dark:text-indigo-400" />
-                </motion.div>
-              </div>
-              <div className="space-y-3 md:space-y-5">
-                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight leading-none">
-                  {displayState.title_bn || 'রিপোর্ট চলছে'}
-                </h1>
-                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-600 dark:text-slate-300">
-                  {displayState.title_en || 'Report in Progress'}
-                </p>
-                <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
-                  {displayState.message_en || 'Service will resume shortly.'}
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-3 md:gap-4 text-indigo-500/70 dark:text-indigo-400/60">
-                <Loader2 className="w-5 h-5 md:w-7 md:h-7 animate-spin" />
-                <span className="text-sm md:text-xl font-bold uppercase tracking-[0.2em]">Please Wait</span>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {/* OFFLINE / MAINTENANCE overlay */}
-        {isOfflineMode && (
-          <motion.div
-            key="offline-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-2xl bg-gradient-to-br from-slate-100/90 via-white/80 to-slate-200/80 dark:from-surface-dark/95 dark:via-surface-dark/90 dark:to-slate-900/60"
-          >
-            <motion.div
-              initial={{ scale: 0.88, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: -10 }}
-              transition={{ duration: 0.4, delay: 0.08, ease: 'easeOut' }}
-              className="text-center space-y-6 md:space-y-10 px-8 max-w-4xl"
-            >
-              <div className="inline-flex items-center justify-center w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-slate-300/30 border-4 border-slate-400/30 dark:border-slate-600/40">
-                <Monitor style={{ width: 'clamp(3.5rem, 6vw, 7rem)', height: 'clamp(3.5rem, 6vw, 7rem)' }} className="text-slate-400 dark:text-slate-500" />
-              </div>
-              <div className="space-y-3 md:space-y-5">
-                <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-slate-500 dark:text-slate-400 tracking-tight leading-none">
-                  {displayState.title_bn || 'সেবা বন্ধ'}
-                </h1>
-                <p className="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-500 dark:text-slate-400">
-                  {displayState.title_en || 'Service Unavailable'}
-                </p>
-                <p className="text-lg md:text-2xl lg:text-3xl text-slate-400 dark:text-slate-500 font-semibold mt-2">
-                  {displayState.message_en || 'Please check back shortly.'}
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-
-      </AnimatePresence>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200/80 dark:border-slate-700/80 px-4 md:px-6 lg:px-10 py-3 md:py-4 shrink-0 relative z-10 gap-2 md:gap-0">
-        <div className="min-w-0">
-          <h1 className="text-xl md:text-3xl lg:text-4xl font-black bg-gradient-to-r from-indigo-600 to-indigo-500 dark:from-indigo-400 dark:to-indigo-300 bg-clip-text text-transparent truncate">
-            {doctors.find((d) => d.id === selectedDoctorId)?.name}
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-sm font-bold uppercase tracking-wider mt-0.5 md:mt-1">{t('tv.live.board')}</p>
+      {/* ── Main Layout Canvas (1366x768 baseline, 12-Column Grid) ── */}
+      <div className="flex-1 min-h-0 grid grid-cols-12 gap-6 my-2 items-stretch overflow-hidden">
+        {/* Left Column (5 Cols): Doctor Info Card (#2 Focus) + Current Serial Hero (Calling Hero, 90-120px) */}
+        <div className="col-span-5 flex flex-col gap-5 min-h-0 overflow-hidden">
+          <DoctorInfoCard doctor={currentDoctor} />
+          <CurrentSerialHero
+            activeItem={activeItem}
+            onRepeatAudio={(serialNo) => speakAnnouncement(serialNo, true)}
+          />
         </div>
-        <div className="flex gap-2 md:gap-4 items-center">
-          {/* Live Clock */}
-          <div className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 px-3 md:px-6 py-1.5 md:py-3 rounded-xl shadow-premium">
-            <span className="text-xl md:text-3xl lg:text-4xl font-black font-mono text-slate-900 dark:text-white tracking-tight tabular-nums">{clock}</span>
-          </div>
-          {!embedded && (
-            <>
-              <AudioToggle />
-              <button onClick={toggleFullscreen} className="flex bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700/80 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs font-semibold cursor-pointer transition-all items-center gap-2" title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
-                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-              </button>
-              <button onClick={logout} className="hidden sm:flex bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700/80 px-3 md:px-4 py-2 md:py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white text-xs font-semibold cursor-pointer transition-all items-center gap-2">
-                <LogOut className="w-4 h-4" /> {t('tv.log.out')}
-              </button>
-              <div className="hidden sm:block">
-                <ThemeToggle />
-              </div>
-            </>
-          )}
+
+        {/* Right Column (7 Cols): Next Queue Cards (Max 5 Patients) + Dedicated Wait Time Card */}
+        <div className="col-span-7 flex flex-col min-h-0 overflow-hidden">
+          <NextQueueGrid items={items} />
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-5 lg:gap-8 px-4 md:px-6 lg:px-10 py-3 md:py-4 flex-1 min-h-0 items-stretch relative z-10 overflow-hidden">
-        {/* Left: Doctor Info (2nd most important) + Now Calling (1st) */}
-        <div className="lg:col-span-1 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-4 md:p-6 lg:p-8 flex flex-col items-center text-center shadow-2xl min-h-0">
-          <div className="flex items-center gap-1.5 md:gap-2 text-indigo-400 font-bold tracking-widest text-[10px] md:text-sm uppercase mb-3 md:mb-5">
-            <Volume2 className="w-4 h-4 md:w-5 md:h-5 animate-pulse text-indigo-400" /> {t('tv.live')}
-          </div>
-
-          {/* Doctor Info Card — 2nd most important, enlarged */}
-          <div className="w-full bg-slate-800/80 border border-slate-700/80 p-5 md:p-7 lg:p-8 rounded-2xl flex flex-col items-center gap-4 md:gap-5 mb-4 md:mb-6 text-center shadow-inner">
-            {/* Doctor photo +30% */}
-            <img
-              src={getSetting('doctor_image') ? `${getStorageBaseUrl()}/storage/${getSetting('doctor_image')}` : '/doctor_portrait.png'}
-              alt="Doctor"
-              className="w-20 h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-44 xl:h-44 rounded-2xl object-cover border-2 border-slate-600/50 shadow-xl shrink-0"
-            />
-            <div className="min-w-0 w-full">
-              {/* Doctor name +50%, bold */}
-              <h3 className="font-black text-xl md:text-3xl lg:text-4xl xl:text-5xl text-white leading-tight">
-                {doctors.find((d) => d.id === selectedDoctorId)?.name}
-              </h3>
-              {/* Specialization +40% */}
-              <p className="text-indigo-400 text-sm md:text-xl lg:text-2xl xl:text-3xl font-bold uppercase tracking-wide mt-1 md:mt-2">
-                {doctors.find((d) => d.id === selectedDoctorId)?.specialization}
-              </p>
-            </div>
-          </div>
-
-          <div className="h-px bg-slate-800 w-full mb-4 md:mb-5" />
-
-          {/* Now Calling — serial is hero but ~20% smaller than before */}
-          <div className="space-y-2 md:space-y-4 w-full">
-            <p className="text-[10px] md:text-sm lg:text-base text-slate-400 font-bold uppercase tracking-widest">{t('tv.now.calling')}</p>
-            <AnimatePresence mode="wait">
-              {activeItem ? (
-                <motion.div
-                  key={activeItem.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-indigo-950/40 border border-indigo-500/50 p-3 md:p-5 lg:p-6 rounded-2xl flex items-center gap-3 md:gap-4 lg:gap-5 shadow-lg shadow-indigo-950/50"
-                >
-                  {/* Serial: hero but ~20% reduced */}
-                  <span className="text-3xl md:text-5xl lg:text-6xl font-black leading-none text-indigo-400 shrink-0">
-                    #{activeItem.serial_no}
-                  </span>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="text-base md:text-xl lg:text-3xl font-black text-white truncate">{activeItem.patient.name}</div>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div key="wait" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <p className="text-sm md:text-lg text-slate-400 font-bold">{t('tv.please.wait')}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          {activeItem && (
-            <button
-              onClick={() => speakAnnouncement(activeItem.serial_no, true)}
-              className="mt-3 md:mt-5 w-full flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-400 font-bold py-2 md:py-3 px-3 md:px-4 rounded-xl text-xs md:text-sm cursor-pointer transition-all"
-            >
-              <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4" /> {t('tv.repeat.audio')}
-            </button>
-          )}
-        </div>
-
-        {/* Right: Up Next — optimized for large-screen readability */}
-        <div className="lg:col-span-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-4 md:p-6 lg:p-8 flex flex-col shadow-2xl min-h-0">
-          <h2 className="text-lg md:text-2xl lg:text-3xl font-black text-slate-400 uppercase tracking-widest mb-3 md:mb-5 flex items-center gap-2 md:gap-4 shrink-0">
-            <UserCheck className="w-5 h-5 md:w-7 md:h-7 lg:w-9 lg:h-9 text-indigo-400" /> {t('tv.up.next')}
-          </h2>
-          {/* Queue list — no inner scroll; clamped to available height */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {waitingItems.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-slate-400 text-sm md:text-xl font-semibold">{t('tv.no.waiting')}</div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 h-full auto-rows-fr">
-                {waitingItems.map((item, index) => {
-                  const showPlaceholder = (index + 1) % 4 === 0 && index < waitingItems.length - 1;
-                  return (
-                  <React.Fragment key={item.id}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.08 }}
-                    className={`bg-slate-800/60 border p-4 md:p-6 lg:p-8 rounded-2xl flex items-center gap-4 md:gap-5 lg:gap-7 ${
-                      index === 0
-                        ? 'border-indigo-500/80 ring-2 ring-indigo-500/30 bg-indigo-950/40 shadow-lg shadow-indigo-950/30'
-                        : item.priority === 'Reserved'
-                        ? 'border-indigo-500/40 bg-slate-800/80'
-                        : 'border-slate-700/70'
-                    }`}
-                  >
-                    {/* Serial */}
-                    <span className={`text-3xl md:text-5xl lg:text-6xl font-black leading-none shrink-0 ${
-                      index === 0 ? 'text-indigo-400'
-                      : item.priority === 'Reserved' ? 'text-indigo-300'
-                      : 'text-slate-400'
-                    }`}>#{item.serial_no}</span>
-                    <div className="flex-1 min-w-0">
-                      {/* Patient name */}
-                      <div className="text-base md:text-xl lg:text-3xl font-black text-white truncate leading-tight">{item.patient.name}</div>
-                      <div className="flex items-center gap-2 mt-1.5 md:mt-2">
-                        {item.priority === 'Reserved' && (
-                          <span className="bg-indigo-500/20 text-indigo-300 text-xs md:text-sm font-bold px-2.5 py-0.5 rounded-full border border-indigo-500/30">{t('tv.reserved')}</span>
-                        )}
-                        {item.priority === 'Emergency' && (
-                          <span className="bg-rose-500/20 text-rose-400 text-xs md:text-sm font-bold px-2.5 py-0.5 rounded-full border border-rose-500/30">{t('tv.emergency')}</span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Placeholder slot after every 4 items */}
-                  {showPlaceholder && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: (index + 1) * 0.08 }}
-                      className="p-4 md:p-5 lg:p-6 rounded-2xl border-2 border-dashed border-slate-700/60 bg-slate-900/40 flex items-center justify-center gap-2 md:gap-3 col-span-1"
-                    >
-                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-slate-500" />
-                      <span className="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-500">
-                        {t('tv.reserved.slot')}
-                      </span>
-                    </motion.div>
-                  )}
-                  </React.Fragment>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer / Announcements */}
-      <div className="bg-slate-900/90 border border-slate-800 mx-4 md:mx-6 lg:mx-10 mb-3 md:mb-4 p-3 md:p-4 lg:p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-5 shrink-0 relative z-10 shadow-2xl">
-        <span className="bg-rose-500/20 border border-rose-500/30 text-rose-400 text-sm md:text-xl lg:text-2xl font-black uppercase tracking-wider px-3 md:px-5 lg:px-6 py-1.5 md:py-2.5 rounded-xl shrink-0 whitespace-nowrap">
-          {t('footer.notice')}
-        </span>
-        {/* Ticker text */}
-        <div className="text-sm md:text-2xl lg:text-3xl xl:text-4xl font-bold text-slate-200 text-center leading-snug tracking-wide">
-          {t('reception.print.footer')}
-        </div>
-      </div>
+      {/* ── Bottom Announcement Ticker Banner (Height 60-70px, Font 28-32px, Smooth Marquee) ── */}
+      <AnnouncementTicker />
 
       {!embedded && <MobileBottomNav onDoctors={() => { setViewMode('single'); setSelectedDoctorId(null); }} />}
       <UserProfile open={profileOpen} onClose={() => setProfileOpen(false)} />
