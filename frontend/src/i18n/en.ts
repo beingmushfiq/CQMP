@@ -295,6 +295,44 @@ const en = {
   'visitor.canvas.phone': 'Phone:',
   'visitor.canvas.doctor': 'Doctor:',
   'visitor.canvas.booked.on': 'Booked on:',
+
+  // Age & Common UI
+  'common.age': 'Age',
+  'common.age.optional': 'Age (Optional)',
+  'common.age.years': 'Years',
+  'common.age.months': 'Months',
+  'common.patient.age': 'Patient Age',
+
+  // Public Booking
+  'public.booking.title': 'Feroza Medicine Corner',
+  'public.booking.subtitle': 'Next-Day Appointment Serial Reservation',
+  'public.booking.tab.reserve': 'Reserve Serial',
+  'public.booking.tab.lookup': 'Check Booking Status',
+  'public.booking.success.confirmed': 'Booking Confirmed!',
+  'public.booking.success.desc': 'Your serial has been reserved for tomorrow ({{date}})',
+  'public.booking.number.label': 'Booking Number',
+  'public.booking.number.notice': 'Please present this number at the reception desk tomorrow.',
+  'public.booking.another': 'Make Another Booking',
+  'public.booking.date.tomorrow': 'Booking Date: Tomorrow ({{date}})',
+  'public.booking.open': 'Open for Booking',
+  'public.booking.purpose': 'Visit Purpose',
+  'public.booking.slot': 'Preferred Slot (Optional)',
+  'public.booking.slot.placeholder': 'Morning / Evening',
+  'public.booking.remarks': 'Remarks / Symptoms (Optional)',
+  'public.booking.remarks.placeholder': 'Brief description...',
+  'public.booking.btn.reserving': 'Reserving Serial...',
+  'public.booking.btn.confirm': 'Confirm Reservation',
+  'public.booking.lookup.label': 'Enter Booking Reference Number',
+  'public.booking.lookup.placeholder': 'e.g. BK-20260803-001',
+  'public.booking.lookup.btn': 'Lookup',
+  'public.booking.lookup.notfound': 'Booking reference not found.',
+  'public.booking.lookup.date': 'Booking Date:',
+  'public.booking.lookup.serial': 'Assigned Serial:',
+
+  // Patient type options
+  'patient.type.new': 'New Patient',
+  'patient.type.followup': 'Follow-up',
+  'patient.type.report': 'Report Showing',
 };
 
 export default en;

@@ -9,12 +9,18 @@ import {
   AlertCircle,
   Stethoscope,
   Search,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 import api from '../utils/api';
+import { useLanguageStore } from '../store/useLanguageStore';
+import { useThemeStore } from '../store/useThemeStore';
 
 export const PublicBookingPage: React.FC = () => {
+  const { lang, toggle: toggleLang, t } = useLanguageStore();
+  const { theme, toggleTheme } = useThemeStore();
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | null>(null);
@@ -96,7 +102,23 @@ export const PublicBookingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-surface-dark text-slate-900 dark:text-white py-10 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white py-10 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center transition-colors duration-300">
+      <div className="w-full max-w-xl flex justify-end gap-2 mb-4">
+        <button
+          onClick={toggleLang}
+          className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-850 cursor-pointer transition-colors"
+          title={lang === 'en' ? 'Switch to Bengali' : 'Switch to English'}
+        >
+          {lang === 'en' ? 'BN' : 'EN'}
+        </button>
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-850 cursor-pointer transition-colors"
+          title="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+      </div>
       <div className="max-w-xl w-full space-y-6">
         {/* Clinic Branding Header */}
         <div className="text-center space-y-2">
@@ -104,35 +126,35 @@ export const PublicBookingPage: React.FC = () => {
             <Stethoscope className="w-8 h-8" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Feroza Medicine Corner
+            {t('public.booking.title')}
           </h1>
           <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-            Next-Day Appointment Serial Reservation
+            {t('public.booking.subtitle')}
           </p>
         </div>
 
         {/* Tab Selector */}
         <div className="flex rounded-xl bg-slate-200/80 dark:bg-slate-800 p-1">
-          <button
-            onClick={() => setActiveTab('book')}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'book'
-                ? 'bg-white dark:bg-surface-card text-indigo-600 dark:text-indigo-400 shadow-md'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Reserve Serial
-          </button>
-          <button
-            onClick={() => setActiveTab('lookup')}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'lookup'
-                ? 'bg-white dark:bg-surface-card text-indigo-600 dark:text-indigo-400 shadow-md'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Check Booking Status
-          </button>
+            <button
+              onClick={() => setActiveTab('book')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'book'
+                  ? 'bg-white dark:bg-surface-card text-indigo-600 dark:text-indigo-400 shadow-md'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {t('public.booking.tab.reserve')}
+            </button>
+            <button
+              onClick={() => setActiveTab('lookup')}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'lookup'
+                  ? 'bg-white dark:bg-surface-card text-indigo-600 dark:text-indigo-400 shadow-md'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {t('public.booking.tab.lookup')}
+            </button>
         </div>
 
         {/* Booking Form Card */}
@@ -148,19 +170,19 @@ export const PublicBookingPage: React.FC = () => {
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Booking Confirmed!</h3>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('public.booking.success.confirmed')}</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Your serial has been reserved for tomorrow ({tomorrowStr})
+                    {t('public.booking.success.desc', { date: tomorrowStr })}
                   </p>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 space-y-2 inline-block max-w-sm w-full">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Booking Number</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('public.booking.number.label')}</p>
                   <p className="text-2xl font-black font-mono text-indigo-600 dark:text-indigo-400">
                     {successData.booking_number}
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Please present this number at the reception desk tomorrow.
+                    {t('public.booking.number.notice')}
                   </p>
                 </div>
 
@@ -174,7 +196,7 @@ export const PublicBookingPage: React.FC = () => {
                   }}
                   className="px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
                 >
-                  Make Another Booking
+                  {t('public.booking.another')}
                 </button>
               </motion.div>
             ) : (
@@ -183,11 +205,11 @@ export const PublicBookingPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-indigo-500" />
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Booking Date: Tomorrow ({tomorrowStr})
+                      {t('public.booking.date.tomorrow', { date: tomorrowStr })}
                     </span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    Open for Booking
+                    {t('public.booking.open')}
                   </span>
                 </div>
 
@@ -201,7 +223,7 @@ export const PublicBookingPage: React.FC = () => {
                 {doctors.length > 0 && (
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Select Doctor
+                      {t('visitor.select.doctor')}
                     </label>
                     <select
                       value={selectedDoctorId || ''}
@@ -210,7 +232,7 @@ export const PublicBookingPage: React.FC = () => {
                     >
                       {doctors.map((d) => (
                         <option key={d.id} value={d.id}>
-                          {d.name} ({d.specialist || 'General Practitioner'})
+                          {d.name} ({d.specialist || t('doctor.status.open')})
                         </option>
                       ))}
                     </select>
@@ -219,7 +241,7 @@ export const PublicBookingPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Patient Full Name <span className="text-rose-500">*</span>
+                    {t('login.full.name')} <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -236,7 +258,7 @@ export const PublicBookingPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Mobile Number <span className="text-slate-400 font-normal">(Optional)</span>
+                    {t('login.phone')} <span className="text-slate-400 font-normal">({t('login.phone.optional')})</span>
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -244,7 +266,7 @@ export const PublicBookingPage: React.FC = () => {
                       type="tel"
                       value={patientPhone}
                       onChange={(e) => setPatientPhone(e.target.value)}
-                      placeholder="017XXXXXXXX (optional)"
+                      placeholder="017XXXXXXXX"
                       className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
@@ -253,7 +275,7 @@ export const PublicBookingPage: React.FC = () => {
                 {/* Age — optional */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Patient Age <span className="text-slate-400 font-normal">(Optional)</span>
+                    {t('common.patient.age')} <span className="text-slate-400 font-normal">({t('login.phone.optional')})</span>
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -270,8 +292,8 @@ export const PublicBookingPage: React.FC = () => {
                       onChange={(e) => setAgeUnit(e.target.value as 'Years' | 'Months')}
                       className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                     >
-                      <option value="Years">Years</option>
-                      <option value="Months">Months</option>
+                      <option value="Years">{t('common.age.years')}</option>
+                      <option value="Months">{t('common.age.months')}</option>
                     </select>
                   </div>
                 </div>
@@ -279,22 +301,22 @@ export const PublicBookingPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Visit Purpose
+                      {t('public.booking.purpose')}
                     </label>
                     <select
                       value={patientType}
                       onChange={(e) => setPatientType(e.target.value as any)}
                       className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                     >
-                      <option value="New">New Patient</option>
-                      <option value="Follow-up">Follow-up</option>
-                      <option value="Report Showing">Report Showing</option>
+                      <option value="New">{t('patient.type.new')}</option>
+                      <option value="Follow-up">{t('patient.type.followup')}</option>
+                      <option value="Report Showing">{t('patient.type.report')}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Preferred Slot (Optional)
+                      {t('public.booking.slot')}
                     </label>
                     <div className="relative">
                       <Clock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -302,7 +324,7 @@ export const PublicBookingPage: React.FC = () => {
                         type="text"
                         value={preferredSlot}
                         onChange={(e) => setPreferredSlot(e.target.value)}
-                        placeholder="Morning / Evening"
+                        placeholder={t('public.booking.slot.placeholder')}
                         className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                       />
                     </div>
@@ -311,13 +333,13 @@ export const PublicBookingPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Remarks / Symptoms (Optional)
+                    {t('public.booking.remarks')}
                   </label>
                   <textarea
                     rows={2}
                     value={remarks}
                     onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Brief description..."
+                    placeholder={t('public.booking.remarks.placeholder')}
                     className="w-full p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 resize-none"
                   />
                 </div>
@@ -327,7 +349,7 @@ export const PublicBookingPage: React.FC = () => {
                   disabled={loading}
                   className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xl shadow-indigo-600/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {loading ? 'Reserving Serial...' : 'Confirm Reservation'}
+                  {loading ? t('public.booking.btn.reserving') : t('public.booking.btn.confirm')}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </form>
@@ -341,7 +363,7 @@ export const PublicBookingPage: React.FC = () => {
             <form onSubmit={handleLookupSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Enter Booking Reference Number
+                  {t('public.booking.lookup.label')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -349,7 +371,7 @@ export const PublicBookingPage: React.FC = () => {
                     required
                     value={lookupNumber}
                     onChange={(e) => setLookupNumber(e.target.value)}
-                    placeholder="e.g. BK-20260803-001"
+                    placeholder={t('public.booking.lookup.placeholder')}
                     className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   />
                   <button
@@ -357,7 +379,7 @@ export const PublicBookingPage: React.FC = () => {
                     disabled={lookupLoading}
                     className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1 cursor-pointer"
                   >
-                    <Search className="w-4 h-4" /> Lookup
+                    <Search className="w-4 h-4" /> {t('public.booking.lookup.btn')}
                   </button>
                 </div>
               </div>
@@ -365,7 +387,7 @@ export const PublicBookingPage: React.FC = () => {
               {lookupError && (
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{lookupError}</span>
+                  <span>{t('public.booking.lookup.notfound')}</span>
                 </div>
               )}
 
@@ -384,9 +406,9 @@ export const PublicBookingPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
-                    <p>Booking Date: <span className="font-semibold text-slate-800 dark:text-slate-200">{lookupResult.booking_date}</span></p>
+                    <p>{t('public.booking.lookup.date')} <span className="font-semibold text-slate-800 dark:text-slate-200">{lookupResult.booking_date}</span></p>
                     {lookupResult.serial_no && (
-                      <p>Assigned Serial: <span className="font-bold text-emerald-600 dark:text-emerald-400">#{lookupResult.serial_no}</span></p>
+                      <p>{t('public.booking.lookup.serial')} <span className="font-bold text-emerald-600 dark:text-emerald-400">#{lookupResult.serial_no}</span></p>
                     )}
                   </div>
                 </motion.div>

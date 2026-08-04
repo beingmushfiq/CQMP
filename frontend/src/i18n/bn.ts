@@ -295,6 +295,44 @@ const bn: Record<string, string> = {
   'visitor.canvas.phone': 'ফোন:',
   'visitor.canvas.doctor': 'ডাক্তার:',
   'visitor.canvas.booked.on': 'বুক করা হয়েছে:',
+
+  // Age & Common UI
+  'common.age': 'বয়স',
+  'common.age.optional': 'বয়স (ঐচ্ছিক)',
+  'common.age.years': 'বছর',
+  'common.age.months': 'মাস',
+  'common.patient.age': 'রোগীর বয়স',
+
+  // Public Booking
+  'public.booking.title': 'ফিরোজা মেডিসিন কর্নার',
+  'public.booking.subtitle': 'পরবর্তী দিনের অ্যাপয়েন্টমেন্ট সিরিয়াল সংরক্ষণ',
+  'public.booking.tab.reserve': 'সিরিয়াল সংরক্ষণ করুন',
+  'public.booking.tab.lookup': 'বুকিং এর অবস্থা যাচাই',
+  'public.booking.success.confirmed': 'বুকিং নিশ্চিত হয়েছে!',
+  'public.booking.success.desc': 'আগামীকালের জন্য আপনার সিরিয়ালটি সংরক্ষিত হয়েছে ({{date}})',
+  'public.booking.number.label': 'বুকিং নম্বর',
+  'public.booking.number.notice': 'আগামীকাল অনুগ্রহ করে এই নম্বরটি রিসেপশনে দেখাবেন।',
+  'public.booking.another': 'আরেকটি বুকিং করুন',
+  'public.booking.date.tomorrow': 'বুকিং এর তারিখ: আগামীকাল ({{date}})',
+  'public.booking.open': 'বুকিং এর জন্য উন্মুক্ত',
+  'public.booking.purpose': 'সাক্ষাৎ এর উদ্দেশ্য',
+  'public.booking.slot': 'পছন্দের সময় (ঐচ্ছিক)',
+  'public.booking.slot.placeholder': 'সকাল / বিকাল',
+  'public.booking.remarks': 'মন্তব্য / উপসর্গ (ঐচ্ছিক)',
+  'public.booking.remarks.placeholder': 'সংক্ষিপ্ত বিবরণ...',
+  'public.booking.btn.reserving': 'সিরিয়াল সংরক্ষিত হচ্ছে...',
+  'public.booking.btn.confirm': 'বুকিং নিশ্চিত করুন',
+  'public.booking.lookup.label': 'বুকিং রেফারেন্স নম্বরটি লিখুন',
+  'public.booking.lookup.placeholder': 'যেমন: BK-20260803-001',
+  'public.booking.lookup.btn': 'খুঁজুন',
+  'public.booking.lookup.notfound': 'বুকিং রেফারেন্স পাওয়া যায়নি।',
+  'public.booking.lookup.date': 'বুকিং এর তারিখ:',
+  'public.booking.lookup.serial': 'বরাদ্দকৃত সিরিয়াল:',
+
+  // Patient type options
+  'patient.type.new': 'নতুন রোগী',
+  'patient.type.followup': 'ফলো-আপ',
+  'patient.type.report': 'রিপোর্ট দেখানো',
 };
 
 export default bn;
