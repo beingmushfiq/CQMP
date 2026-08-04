@@ -128,6 +128,7 @@ Route::prefix('v1')->group(function () {
 
             Route::middleware('role:Super Admin|Admin|Receptionist')->group(function () {
                 Route::post('/', [\App\Http\Controllers\Api\BookingController::class, 'store'])->name('store');
+                Route::delete('/{booking}', [\App\Http\Controllers\Api\BookingController::class, 'destroy'])->name('destroy');
                 Route::post('/{booking}/confirm', [\App\Http\Controllers\Api\BookingController::class, 'confirm'])->name('confirm');
                 Route::post('/{booking}/cancel', [\App\Http\Controllers\Api\BookingController::class, 'cancel'])->name('cancel');
                 Route::post('/{booking}/check-in', [\App\Http\Controllers\Api\BookingController::class, 'checkIn'])->name('check-in');

@@ -170,6 +170,20 @@ class BookingController extends Controller
     }
 
     /**
+     * DELETE /api/v1/bookings/{id}
+     */
+    public function destroy(Request $request, Booking $booking): JsonResponse
+    {
+        $bookingNumber = $booking->booking_number;
+        $patientId = $booking->patient_id;
+        $booking->delete();
+
+        $this->audit->log('booking.deleted', targetPatientId: $patientId, details: "Booking Deleted: {$bookingNumber}", request: $request);
+
+        return response()->json(['message' => 'Booking deleted successfully.']);
+    }
+
+    /**
      * POST /api/v1/bookings/{id}/no-show
      */
     public function noShow(Request $request, Booking $booking): JsonResponse
