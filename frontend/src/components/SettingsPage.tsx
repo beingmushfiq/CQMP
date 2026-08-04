@@ -163,7 +163,7 @@ export const SettingsPage: React.FC = () => {
               value={form.doctor_name || ''}
               onChange={(e) => update('doctor_name', e.target.value)}
               className="w-full"
-              placeholder="Dr. Asif"
+              placeholder="Dr. Muhammad Asif Sattar"
             />
           </div>
           <div className="space-y-1.5">
@@ -173,7 +173,7 @@ export const SettingsPage: React.FC = () => {
               value={form.doctor_specialization || ''}
               onChange={(e) => update('doctor_specialization', e.target.value)}
               className="w-full"
-              placeholder="General Physician"
+              placeholder="General Practitioner"
             />
           </div>
         </div>

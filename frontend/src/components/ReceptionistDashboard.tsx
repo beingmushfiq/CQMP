@@ -180,9 +180,11 @@ export const ReceptionistDashboard: React.FC = () => {
 
   useEffect(() => {
     api.get('/me').then(() => {
-      setDoctors([
-        { id: 1, name: getSetting('doctor_name', 'Dr. Asif'), specialization: getSetting('doctor_specialization', 'General Physician') }
-      ]);
+      const list = [
+        { id: 1, name: getSetting('doctor_name', 'Dr. Muhammad Asif Sattar'), specialization: getSetting('doctor_specialization', 'General Practitioner') }
+      ];
+      setDoctors(list);
+      if (list.length === 1) handleSelectDoctor(list[0].id);
     });
   }, []);
 

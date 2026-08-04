@@ -28,7 +28,7 @@ export const LoginForm: React.FC = () => {
   const { get: getSetting } = useSettingsStore();
   const { lang, toggle: toggleLang, t } = useLanguageStore();
 
-  const DEFAULT_DOCTOR: Doctor = { id: 1, name: 'Dr. Asif', specialization: 'General Physician' };
+  const DEFAULT_DOCTOR: Doctor = { id: 1, name: 'Dr. Muhammad Asif Sattar', specialization: 'General Practitioner' };
   const [doctors, setDoctors] = useState<Doctor[]>([DEFAULT_DOCTOR]);
   const [doctorId, setDoctorId] = useState<number | null>(1);
   const [patientName, setPatientName] = useState('');
