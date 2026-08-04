@@ -82,10 +82,19 @@ class BookingController extends Controller
             'remarks'        => ['nullable', 'string', 'max:500'],
         ]);
 
-        $booking = $this->bookingService->create($data, $request->user());
-        $this->audit->log('booking.created', targetPatientId: $booking->patient_id, details: "Booking Number: {$booking->booking_number}", request: $request);
+        try {
+            $booking = $this->bookingService->create($data, $request->user());
+            $this->audit->log('booking.created', targetPatientId: $booking->patient_id, details: "Booking Number: {$booking->booking_number}", request: $request);
 
-        return response()->json(['booking' => $booking->load(['patient', 'doctor'])], 201);
+            return response()->json(['booking' => $booking->load(['patient', 'doctor'])], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Booking store failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'Booking creation failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -103,14 +112,31 @@ class BookingController extends Controller
             'remarks'        => ['nullable', 'string', 'max:500'],
         ]);
 
-        $booking = $this->bookingService->create($data, null);
+        try {
+            $booking = $this->bookingService->create($data, null);
 
-        return response()->json([
-            'message'        => 'Booking created successfully!',
-            'booking_number' => $booking->booking_number,
-            'booking_date'   => $booking->booking_date->toDateString(),
-            'status'         => $booking->status->value,
-        ], 201);
+            $dateStr = $booking->booking_date instanceof \DateTimeInterface
+                ? $booking->booking_date->format('Y-m-d')
+                : Carbon::parse($booking->booking_date)->format('Y-m-d');
+
+            $statusStr = $booking->status instanceof \BackedEnum
+                ? $booking->status->value
+                : (string) $booking->status;
+
+            return response()->json([
+                'message'        => 'Booking created successfully!',
+                'booking_number' => $booking->booking_number,
+                'booking_date'   => $dateStr,
+                'status'         => $statusStr,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Public booking store failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'Booking creation failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -120,12 +146,26 @@ class BookingController extends Controller
     {
         $booking = Booking::where('booking_number', $bookingNumber)->firstOrFail();
 
+        $phone = ! empty($booking->patient_phone)
+            ? (strlen($booking->patient_phone) >= 7
+                ? substr($booking->patient_phone, 0, 3) . '****' . substr($booking->patient_phone, -4)
+                : $booking->patient_phone)
+            : 'N/A';
+
+        $dateStr = $booking->booking_date instanceof \DateTimeInterface
+            ? $booking->booking_date->format('Y-m-d')
+            : Carbon::parse($booking->booking_date)->format('Y-m-d');
+
+        $statusStr = $booking->status instanceof \BackedEnum
+            ? $booking->status->value
+            : (string) $booking->status;
+
         return response()->json([
             'booking_number' => $booking->booking_number,
             'patient_name'   => $booking->patient_name,
-            'patient_phone'  => substr($booking->patient_phone, 0, 3) . '****' . substr($booking->patient_phone, -4),
-            'booking_date'   => $booking->booking_date->toDateString(),
-            'status'         => $booking->status->value,
+            'patient_phone'  => $phone,
+            'booking_date'   => $dateStr,
+            'status'         => $statusStr,
             'serial_no'      => $booking->serial_no,
         ]);
     }
@@ -219,7 +259,7 @@ class BookingController extends Controller
      */
     public function stats(Request $request): JsonResponse
     {
-        $date = $request->get('date', Carbon::tomorrow()->toDateString());
+        $date = $request->input('date', Carbon::tomorrow()->toDateString());
 
         $byStatus = Booking::forDate($date)
             ->selectRaw('status, count(*) as total')
