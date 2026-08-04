@@ -4,11 +4,13 @@ namespace App\Models;
 
 use App\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Booking extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'booking_number',
         'doctor_id',
@@ -96,7 +98,7 @@ class Booking extends Model
 
     public function scopeForDate(Builder $q, string $date): Builder
     {
-        return $q->where('booking_date', $date);
+        return $q->whereDate('booking_date', $date);
     }
 
     public function scopeActive(Builder $q): Builder

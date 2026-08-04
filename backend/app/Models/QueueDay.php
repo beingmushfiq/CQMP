@@ -7,6 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Class QueueDay
+ *
+ * @property int $id
+ * @property int $clinic_id
+ * @property int $doctor_id
+ * @property \Illuminate\Support\Carbon|string $date
+ * @property string $status
+ * @property int|null $opened_by
+ * @property \Illuminate\Support\Carbon|null $opened_at
+ * @property \Illuminate\Support\Carbon|null $closed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ *
+ * @mixin \Illuminate\Database\Eloquent\Builder
+ */
 class QueueDay extends Model
 {
     use HasFactory;

@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Patient;
 use App\Models\QueueDay;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -22,7 +23,9 @@ class BookingConversionService
      */
     public function convertForDate(string $date, QueueDay $queueDay, ?User $actor = null): int
     {
-        $bookings = Booking::forDate($date)
+        $bookings = Booking::with('patient')
+            ->where('doctor_id', $queueDay->doctor_id)
+            ->forDate($date)
             ->whereIn('status', [BookingStatus::CONFIRMED->value, BookingStatus::CHECKED_IN->value])
             ->whereNull('converted_at')
             ->orderBy('id', 'asc')
@@ -59,7 +62,7 @@ class BookingConversionService
                     null // Auto-assign next sequential serial
                 );
 
-                // Attach remarks / booking origin
+                /** @var \App\Models\QueueItem $queueItem */
                 $queueItem->update([
                     'remarks'          => trim(($booking->remarks ? $booking->remarks . ' | ' : '') . "Booking: {$booking->booking_number} ({$booking->patient_type})"),
                     'appointment_type' => 'Online', // Mark converted booking as Online appointment
@@ -69,7 +72,7 @@ class BookingConversionService
                 $booking->update([
                     'status'        => BookingStatus::COMPLETED,
                     'serial_no'     => $queueItem->serial_no,
-                    'queue_item_id' => $queueItem->id,
+                    'queue_item_id' => (int) $queueItem->id,
                     'converted_at'  => now(),
                     'converted_by'  => $actor?->id,
                 ]);
@@ -93,8 +96,8 @@ class BookingConversionService
                 'channel' => 'bookings',
                 'event'   => 'bookings.converted',
                 'data'    => [
-                    'queue_day_id' => $queueDay->id,
-                    'date'         => $queueDay->date->toDateString(),
+                    'queue_day_id' => (int) $queueDay->id,
+                    'date'         => ($queueDay->date instanceof Carbon ? $queueDay->date : Carbon::parse($queueDay->date))->toDateString(),
                     'count'        => $count,
                 ],
             ]);

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\Patient;
+use App\Models\QueueDay;
 use App\Models\Setting;
 use App\Models\User;
 use Carbon\Carbon;
@@ -14,6 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class BookingService
 {
+    public function __construct(
+        private readonly BookingConversionService $conversionService
+    ) {}
+
     public function generateBookingNumber(string $date): string
     {
         $dateStr = Carbon::parse($date)->format('Ymd');
@@ -163,6 +168,9 @@ class BookingService
         $this->broadcast('booking.confirmed', $booking);
         $this->sendSmsNotification($booking, 'booking_confirmed');
 
+        // If the queue is already open for today, convert immediately
+        $this->maybeConvertToQueue($booking);
+
         return $booking;
     }
 
@@ -199,6 +207,9 @@ class BookingService
 
         $this->broadcast('booking.checked_in', $booking);
 
+        // If the queue is already open for today, convert immediately
+        $this->maybeConvertToQueue($booking);
+
         return $booking;
     }
 
@@ -221,6 +232,45 @@ class BookingService
     {
         $this->broadcast('booking.deleted', $booking);
         $booking->delete();
+    }
+
+    /**
+     * Immediately convert a booking into a queue item if today's queue is
+     * already open for the booking's doctor. This handles the case where a
+     * booking is confirmed / checked-in *after* the receptionist opened the
+     * queue, so it does not have to wait for the next scheduler sweep.
+     */
+    private function maybeConvertToQueue(Booking $booking): void
+    {
+        $bookingDateStr = $booking->booking_date instanceof \DateTimeInterface
+            ? $booking->booking_date->format('Y-m-d')
+            : Carbon::parse($booking->booking_date)->toDateString();
+
+        // Only relevant if the booking is for today
+        if ($bookingDateStr !== Carbon::today()->toDateString()) {
+            return;
+        }
+
+        // Skip if already converted
+        if ($booking->converted_at !== null) {
+            return;
+        }
+
+        $queueDay = QueueDay::where('doctor_id', $booking->doctor_id)
+            ->where('date', '>=', Carbon::today()->startOfDay())
+            ->where('date', '<=', Carbon::today()->endOfDay())
+            ->where('status', 'opened')
+            ->latest()
+            ->first();
+
+        if (! $queueDay) {
+            return; // Queue not open yet — will convert on queue open or next scheduler run
+        }
+
+        rescue(
+            fn () => $this->conversionService->convertForDate($bookingDateStr, $queueDay),
+            report: true,
+        );
     }
 
     private function broadcast(string $event, Booking $booking): void
