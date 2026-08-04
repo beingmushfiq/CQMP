@@ -29,9 +29,13 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
   const [doctorId, setDoctorId] = useState<number | null>(1);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [ageNum, setAgeNum] = useState('');
+  const [ageUnit, setAgeUnit] = useState<'Years' | 'Months'>('Years');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<BookingResult | null>(null);
+
+  const buildAgeNote = () => ageNum.trim() ? `Age: ${ageNum.trim()} ${ageUnit}` : undefined;
 
   // Register Keyboard Shortcuts
   useKeyboardShortcut({
@@ -89,6 +93,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
         name,
         ...(phone ? { phone } : {}),
         doctor_id: doctorId,
+        ...(buildAgeNote() ? { notes: buildAgeNote() } : {}),
       });
       setResult(r.data);
     } catch (err: any) {
@@ -237,7 +242,7 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setResult(null); setName(''); setPhone(''); setDoctorId(null); }}
+                  onClick={() => { setResult(null); setName(''); setPhone(''); setAgeNum(''); setAgeUnit('Years'); setDoctorId(null); }}
                   className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl transition-all active:scale-[0.98] cursor-pointer min-h-[48px]"
                 >
                   Book Another
@@ -303,6 +308,33 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
                   placeholder="e.g. 01712345678 (leave blank if unknown)"
                   className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[52px]"
                 />
+              </div>
+
+              {/* Age — optional */}
+              <div>
+                <label className="flex items-center gap-2 text-slate-300 text-sm font-medium mb-2">
+                  Age
+                  <span className="text-xs text-emerald-500 font-normal ml-1">(optional)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={ageNum}
+                    onChange={(e) => setAgeNum(e.target.value)}
+                    placeholder="e.g. 35"
+                    className="w-24 flex-shrink-0 bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[52px]"
+                  />
+                  <select
+                    value={ageUnit}
+                    onChange={(e) => setAgeUnit(e.target.value as 'Years' | 'Months')}
+                    className="flex-1 bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[52px] appearance-none"
+                  >
+                    <option value="Years">Years</option>
+                    <option value="Months">Months</option>
+                  </select>
+                </div>
               </div>
 
               <button

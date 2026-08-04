@@ -27,11 +27,15 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
 }) => {
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
+  const [ageNum, setAgeNum] = useState('');
+  const [ageUnit, setAgeUnit] = useState<'Years' | 'Months'>('Years');
   const [patientType, setPatientType] = useState<'New' | 'Follow-up' | 'Report Showing'>('New');
   const [preferredSlot, setPreferredSlot] = useState('');
   const [remarks, setRemarks] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const buildAgeNote = () => ageNum.trim() ? `Age: ${ageNum.trim()} ${ageUnit}` : '';
 
   if (!isOpen) return null;
 
@@ -52,12 +56,14 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
         patient_type: patientType,
         booking_date: tomorrowDate,
         preferred_slot: preferredSlot.trim() || undefined,
-        remarks: remarks.trim() || undefined,
+        remarks: [buildAgeNote(), remarks.trim()].filter(Boolean).join(' | ') || undefined,
       });
       onClose();
       // Reset form
       setPatientName('');
       setPatientPhone('');
+      setAgeNum('');
+      setAgeUnit('Years');
       setPatientType('New');
       setPreferredSlot('');
       setRemarks('');
@@ -133,6 +139,32 @@ export const BookingFormModal: React.FC<BookingFormModalProps> = ({
                   placeholder="017XXXXXXXX (optional)"
                   className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 />
+              </div>
+            </div>
+
+            {/* Age — optional */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Patient Age <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={120}
+                  value={ageNum}
+                  onChange={(e) => setAgeNum(e.target.value)}
+                  placeholder="e.g. 35"
+                  className="w-24 flex-shrink-0 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                />
+                <select
+                  value={ageUnit}
+                  onChange={(e) => setAgeUnit(e.target.value as 'Years' | 'Months')}
+                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Years">Years</option>
+                  <option value="Months">Months</option>
+                </select>
               </div>
             </div>
 

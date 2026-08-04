@@ -44,9 +44,16 @@ export const ReceptionistDashboard: React.FC = () => {
 
   const [searchPhone, setSearchPhone] = useState('');
   const [patientName, setPatientName] = useState('');
+  const [ageNum, setAgeNum] = useState('');
+  const [ageUnit, setAgeUnit] = useState<'Years' | 'Months'>('Years');
   const [customSerial, setCustomSerial] = useState<string>('');
   const [patientRecord, setPatientRecord] = useState<any | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Inline name edit state
+  const [editingNameItemId, setEditingNameItemId] = useState<number | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState('');
+  const editingNameInputRef = useRef<HTMLInputElement>(null);
 
   // Reorder state
   const [reorderItemId, setReorderItemId] = useState<number | null>(null);
@@ -218,6 +225,7 @@ export const ReceptionistDashboard: React.FC = () => {
       const patRes = await api.post('/patients', {
         name: patientName,
         ...(searchPhone ? { phone: searchPhone } : {}),
+        ...(ageNum.trim() ? { notes: `Age: ${ageNum.trim()} ${ageUnit}` } : {}),
       });
       const patientId = patRes.data.data.id;
 
@@ -235,6 +243,8 @@ export const ReceptionistDashboard: React.FC = () => {
       setSearchPhone('');
       setPatientName('');
       setCustomSerial('');
+      setAgeNum('');
+      setAgeUnit('Years');
       setPatientRecord(null);
       fetchTodayQueue(selectedDoctorId);
 
@@ -287,19 +297,22 @@ export const ReceptionistDashboard: React.FC = () => {
   }, []);
 
   const confirmReorder = useCallback(async () => {
-    if (reorderItemId === null || !reorderPosition) return;
-    const pos = parseInt(reorderPosition);
-    if (isNaN(pos) || pos < 1) {
-      setToast({ message: 'Please enter a valid position (1 or higher).', type: 'error' });
+    if (reorderItemId === null || reorderPosition === '') return;
+    const afterSerial = parseInt(reorderPosition);
+    if (isNaN(afterSerial) || afterSerial < 0) {
+      setToast({ message: 'Please enter 0 (front) or a valid serial number.', type: 'error' });
       setTimeout(() => setToast(null), 3000);
       return;
     }
+    const targetPosition = afterSerial + 1;
     setConfirmModal({
-      message: `Reinsert this patient at position #${pos}?`,
+      message: afterSerial === 0
+        ? `Reinsert this patient at the front of the queue?`
+        : `Reinsert this patient after serial #${afterSerial}?`,
       onConfirm: async () => {
         try {
-          await reinsertItem(reorderItemId, pos);
-          setToast({ message: `Patient moved to position #${pos}.`, type: 'success' });
+          await reinsertItem(reorderItemId, targetPosition);
+          setToast({ message: afterSerial === 0 ? 'Patient moved to front.' : `Patient inserted after serial #${afterSerial}.`, type: 'success' });
           setTimeout(() => setToast(null), 3000);
         } catch {
           setToast({ message: 'Failed to reorder. Please try again.', type: 'error' });
@@ -325,6 +338,29 @@ export const ReceptionistDashboard: React.FC = () => {
       },
     });
   };
+
+  const renamePatient = async (patientId: number, newName: string) => {
+    if (!newName.trim()) return;
+    try {
+      await api.put(`/patients/${patientId}`, { name: newName.trim() });
+      if (selectedDoctorId) fetchTodayQueue(selectedDoctorId);
+      setToast({ message: `Name updated to "${newName.trim()}".`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ message: 'Failed to update patient name.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setEditingNameItemId(null);
+      setEditingNameValue('');
+    }
+  };
+
+  // Focus inline name edit input when it appears
+  useEffect(() => {
+    if (editingNameItemId !== null) {
+      setTimeout(() => editingNameInputRef.current?.focus(), 50);
+    }
+  }, [editingNameItemId]);
 
   const AudioToggle = () => (
     <button
@@ -440,6 +476,32 @@ export const ReceptionistDashboard: React.FC = () => {
                   >
                     <Search className="w-4 h-4" />
                   </button>
+                </div>
+              </div>
+
+              {/* Age — optional */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                  Age <span className="font-normal text-slate-400 dark:text-slate-600">(optional)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={ageNum}
+                    onChange={(e) => setAgeNum(e.target.value)}
+                    placeholder="e.g. 35"
+                    className="w-20 flex-shrink-0 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"
+                  />
+                  <select
+                    value={ageUnit}
+                    onChange={(e) => setAgeUnit(e.target.value as 'Years' | 'Months')}
+                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
+                  >
+                    <option value="Years">Years</option>
+                    <option value="Months">Months</option>
+                  </select>
                 </div>
               </div>
 

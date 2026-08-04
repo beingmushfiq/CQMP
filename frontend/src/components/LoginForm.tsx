@@ -33,9 +33,13 @@ export const LoginForm: React.FC = () => {
   const [doctorId, setDoctorId] = useState<number | null>(1);
   const [patientName, setPatientName] = useState('');
   const [phone, setPhone] = useState('');
+  const [ageNum, setAgeNum] = useState('');
+  const [ageUnit, setAgeUnit] = useState<'Years' | 'Months'>('Years');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [result, setResult] = useState<BookingResult | null>(null);
+
+  const buildAgeNote = () => ageNum.trim() ? `Age: ${ageNum.trim()} ${ageUnit}` : undefined;
 
   useEffect(() => {
     publicApi.get('/public/doctors').then((r) => {
@@ -59,7 +63,8 @@ export const LoginForm: React.FC = () => {
     if (!doctorId) { setBookingError(t('login.error.select.doctor')); return; }
     setBookingError(''); setBookingLoading(true);
     try {
-      const r = await publicApi.post('/public/book', { name: patientName, ...(phone ? { phone } : {}), doctor_id: doctorId });
+      const ageNote = buildAgeNote();
+      const r = await publicApi.post('/public/book', { name: patientName, ...(phone ? { phone } : {}), doctor_id: doctorId, ...(ageNote ? { notes: ageNote } : {}) });
       setResult(r.data);
     } catch (err: any) { setBookingError(err.response?.data?.message || t('login.error.booking')); }
     finally { setBookingLoading(false); }
@@ -214,7 +219,7 @@ export const LoginForm: React.FC = () => {
                   <button onClick={downloadTokenImage} className="btn-primary btn-lg flex-1">
                     <Download className="w-4 h-4" /> {t('login.save.token')}
                   </button>
-                  <button onClick={() => { setResult(null); setPatientName(''); setPhone(''); }} className="btn-secondary btn-lg flex-1">
+                  <button onClick={() => { setResult(null); setPatientName(''); setPhone(''); setAgeNum(''); setAgeUnit('Years'); }} className="btn-secondary btn-lg flex-1">
                     {t('login.book.another')}
                   </button>
                 </div>
@@ -270,6 +275,34 @@ export const LoginForm: React.FC = () => {
                     </label>
                     <input id="login-patient-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 01712345678" />
                   </div>
+
+                  {/* Age — optional */}
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                      Age
+                      <span className="text-xs text-emerald-500 font-normal normal-case tracking-normal ml-1">(optional)</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={ageNum}
+                        onChange={(e) => setAgeNum(e.target.value)}
+                        placeholder="e.g. 35"
+                        className="w-20 flex-shrink-0"
+                      />
+                      <select
+                        value={ageUnit}
+                        onChange={(e) => setAgeUnit(e.target.value as 'Years' | 'Months')}
+                        className="flex-1"
+                      >
+                        <option value="Years">Years</option>
+                        <option value="Months">Months</option>
+                      </select>
+                    </div>
+                  </div>
+
 
                   <button type="submit" disabled={bookingLoading || !doctorId} className="btn-mint btn-lg w-full">
                     {bookingLoading
