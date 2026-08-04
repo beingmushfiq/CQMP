@@ -2,22 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
-import { LogIn, CalendarCheck, Stethoscope, Phone, User, CheckCircle, X, Sun, Moon, Download, Eye, EyeOff } from 'lucide-react';
+import {
+  LogIn, CalendarCheck, Stethoscope, Phone, User,
+  CheckCircle, X, Sun, Moon, Download, Eye, EyeOff,
+  Heart, Clock, ShieldCheck,
+} from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { createPublicApi } from '../utils/api';
 
-interface Doctor {
-  id: number;
-  name: string;
-  specialization: string;
-}
-
-interface BookingResult {
-  serial_no: number;
-  message: string;
-  patient: { name: string; phone: string };
-}
+interface Doctor { id: number; name: string; specialization: string; }
+interface BookingResult { serial_no: number; message: string; patient: { name: string; phone: string }; }
 
 const publicApi = createPublicApi();
 
@@ -47,352 +42,291 @@ export const LoginForm: React.FC = () => {
       const data = Array.isArray(r.data) && r.data.length > 0 ? r.data : [DEFAULT_DOCTOR];
       setDoctors(data);
       if (data.length > 0 && !doctorId) setDoctorId(data[0].id);
-    }).catch(() => {
-      setDoctors([DEFAULT_DOCTOR]);
-      setDoctorId(1);
-    });
+    }).catch(() => { setDoctors([DEFAULT_DOCTOR]); setDoctorId(1); });
   }, []);
 
-  useKeyboardShortcut({
-    'escape': () => {
-      if (showLogin) setShowLogin(false);
-      else if (result) setResult(null);
-    },
-  });
+  useKeyboardShortcut({ escape: () => { if (showLogin) setShowLogin(false); else if (result) setResult(null); } });
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-    setLoading(true);
-    try {
-      await login(email, password);
-    } catch (err: any) {
-      setLoginError(err.response?.data?.message || t('login.error'));
-    } finally {
-      setLoading(false);
-    }
+    e.preventDefault(); setLoginError(''); setLoading(true);
+    try { await login(email, password); }
+    catch (err: any) { setLoginError(err.response?.data?.message || t('login.error')); }
+    finally { setLoading(false); }
   };
 
   const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!doctorId) { setBookingError(t('login.error.select.doctor')); return; }
-    setBookingError('');
-    setBookingLoading(true);
+    setBookingError(''); setBookingLoading(true);
     try {
-      const r = await publicApi.post('/public/book', {
-        name: patientName,
-        ...(phone ? { phone } : {}),
-        doctor_id: doctorId,
-      });
+      const r = await publicApi.post('/public/book', { name: patientName, ...(phone ? { phone } : {}), doctor_id: doctorId });
       setResult(r.data);
-    } catch (err: any) {
-      setBookingError(err.response?.data?.message || t('login.error.booking'));
-    } finally {
-      setBookingLoading(false);
-    }
+    } catch (err: any) { setBookingError(err.response?.data?.message || t('login.error.booking')); }
+    finally { setBookingLoading(false); }
   };
 
   const downloadTokenImage = () => {
     if (!result) return;
-    
     const selectedDoc = doctors.find(d => d.id === doctorId);
-    const doctorName = selectedDoc ? selectedDoc.name : 'Doctor';
-
+    const doctorName = selectedDoc?.name || 'Doctor';
     const canvas = document.createElement('canvas');
-    canvas.width = 600;
-    canvas.height = 400;
+    canvas.width = 600; canvas.height = 400;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    const grad = ctx.createLinearGradient(0, 0, 600, 400);
-    grad.addColorStop(0, '#0f172a');
-    grad.addColorStop(1, '#020617');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 600, 400);
-
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.15)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(300, 200, 180, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(20, 20, 560, 360);
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(getSetting('site_title', 'CQMP').toUpperCase(), 300, 55);
-
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'normal 14px sans-serif';
-    ctx.fillText(t('login.serial.title'), 300, 100);
-
-    ctx.fillStyle = '#10b981';
-    ctx.font = '900 80px sans-serif';
-    ctx.fillText(`#${result.serial_no}`, 300, 180);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 20px sans-serif';
-    ctx.fillText(result.patient.name, 300, 240);
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'normal 14px sans-serif';
-    ctx.fillText(`${t('login.canvas.phone')} ${result.patient.phone || 'N/A'}`, 300, 265);
-
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '600 16px sans-serif';
-    ctx.fillText(`${t('login.canvas.doctor')} ${doctorName}`, 300, 310);
-
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 600, 400);
+    ctx.fillStyle = '#2563eb'; ctx.fillRect(0, 0, 600, 80);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 20px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(getSetting('site_title', 'CQMP').toUpperCase(), 300, 44);
+    ctx.font = '13px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText('Patient Token Card', 300, 64);
+    ctx.fillStyle = '#64748b'; ctx.font = '13px Inter, sans-serif';
+    ctx.fillText(t('login.serial.title'), 300, 120);
+    ctx.fillStyle = '#2563eb'; ctx.font = '900 96px Inter, sans-serif';
+    ctx.fillText(`#${result.serial_no}`, 300, 220);
+    ctx.fillStyle = '#0f172a'; ctx.font = 'bold 22px Inter, sans-serif';
+    ctx.fillText(result.patient.name, 300, 268);
+    ctx.fillStyle = '#64748b'; ctx.font = '14px Inter, sans-serif';
+    ctx.fillText(`${t('login.canvas.phone')} ${result.patient.phone || 'N/A'}`, 300, 292);
+    ctx.fillStyle = '#2563eb'; ctx.font = '600 15px Inter, sans-serif';
+    ctx.fillText(`${t('login.canvas.doctor')} ${doctorName}`, 300, 330);
     const now = new Date();
-    const dateStr = now.toLocaleDateString();
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    ctx.fillStyle = '#64748b';
-    ctx.font = 'normal 12px sans-serif';
-    ctx.fillText(`${t('login.canvas.booked.on')} ${dateStr} at ${timeStr}`, 300, 355);
-
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px Inter, sans-serif';
+    ctx.fillText(`${t('login.canvas.booked.on')} ${now.toLocaleDateString()} at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 300, 380);
     const link = document.createElement('a');
     link.download = `token_${result.serial_no}_${result.patient.name.toLowerCase().replace(/\s+/g, '_')}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
 
+  const siteTitle = getSetting('site_title', 'CQMP');
+  const siteSubtitle = getSetting('site_subtitle', 'Clinic Queue Management Platform');
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-surface-dark flex items-center justify-center px-4 py-10 relative overflow-hidden transition-colors duration-300">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors duration-300">
 
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-        <button
-          onClick={toggleLang}
-          className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 text-xs font-bold text-slate-600 dark:text-slate-300 cursor-pointer transition-all"
-          title={lang === 'en' ? 'Switch to Bangla' : 'Switch to English'}
-        >
-          {lang === 'en' ? 'BN' : 'EN'}
-        </button>
-        <button
-          onClick={toggleTheme}
-          className="flex items-center justify-center p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all cursor-pointer"
-          title="Toggle theme"
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
-        <button
-          onClick={() => setShowLogin(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all cursor-pointer text-[10px] font-semibold"
-        >
-          <LogIn className="w-3 h-3" /> Staff
-        </button>
-      </div>
+      {/* ── Left Branding Panel ── */}
+      <div
+        className="hidden lg:flex lg:w-2/5 xl:w-1/2 flex-col justify-between p-10 relative overflow-hidden"
+        style={{ backgroundColor: '#1d4ed8' }}
+      >
+        {/* Decorative circles */}
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full -translate-y-1/2 translate-x-1/3" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
+        <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full translate-y-1/2 -translate-x-1/3" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }} />
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white dark:bg-surface-card/70 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/80 p-8 rounded-xl shadow-premium-lg transition-colors duration-300">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="w-14 h-14 rounded-xl overflow-hidden shadow-lg shadow-indigo-600/20 dark:shadow-indigo-600/30 ring-1 ring-indigo-500/20 dark:ring-indigo-500/30">
-                <img src="/favicon.svg" alt="CQMP" className="w-full h-full" />
-              </div>
+        {/* Logo + brand */}
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+              <Heart className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-              {getSetting('site_title', 'CQMP')} {t('login.title')}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{getSetting('site_subtitle', 'Clinic Queue Management Platform')}</p>
+            <div>
+              <div className="text-white font-bold text-lg leading-tight">{siteTitle}</div>
+              <div className="text-blue-200 text-xs font-medium">Healthcare Platform</div>
+            </div>
           </div>
+          <h1 className="text-white text-3xl xl:text-4xl font-black leading-tight mb-4">
+            Seamless<br />Patient Queue<br />Management
+          </h1>
+          <p className="text-blue-100 text-sm leading-relaxed max-w-xs">
+            {siteSubtitle}. Get your serial number instantly and wait comfortably.
+          </p>
+        </div>
 
-          {result ? (
-            <div className="text-center space-y-5 py-4">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-500/15 border-2 border-emerald-400 dark:border-emerald-500/40">
-                <CheckCircle className="w-10 h-10 text-emerald-500 dark:text-emerald-400" />
+        {/* Feature bullets */}
+        <div className="relative space-y-4">
+          {[
+            { icon: <Clock className="w-4 h-4 text-white" />, text: 'Real-time queue updates shown on the waiting-room TV display.' },
+            { icon: <ShieldCheck className="w-4 h-4 text-white" />, text: 'No registration required — just enter your name to get a serial.' },
+            { icon: <CalendarCheck className="w-4 h-4 text-white" />, text: 'Advance bookings available for next-day appointments.' },
+          ].map((f, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                {f.icon}
               </div>
-              <div>
-                <p className="text-slate-500 dark:text-slate-300 text-xs">{t('login.serial.your')}</p>
-                <p className="text-7xl font-black text-emerald-500 dark:text-emerald-400 my-2">#{result.serial_no}</p>
-                <p className="text-slate-500 dark:text-slate-400 text-xs">{t('login.serial.booked.for')} <span className="text-slate-900 dark:text-white font-semibold">{result.patient.name}</span></p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-transparent rounded-lg p-3 text-[10px] text-slate-500 dark:text-slate-400 text-left space-y-1">
-                <p>• {t('login.notice.present')}</p>
-                <p>• {t('login.notice.display')}</p>
-                <p>• {t('login.notice.receptionist')}</p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={downloadTokenImage}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-all active:scale-[0.98] cursor-pointer text-xs min-h-[48px]"
-                  aria-label="Save Token"
-                >
-                  <Download className="w-4 h-4" /> {t('login.save.token')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setResult(null); setPatientName(''); setPhone(''); }}
-                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg transition-all active:scale-[0.98] cursor-pointer text-xs min-h-[48px]"
-                >
-                  {t('login.book.another')}
-                </button>
-              </div>
+              <p className="text-blue-100 text-sm leading-relaxed">{f.text}</p>
             </div>
-          ) : (
-            <form onSubmit={handleBook} className="space-y-5">
-              {bookingError && (
-                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-xs" role="alert">{bookingError}</div>
-              )}
-
-              {/* Doctor */}
-              <div>
-                <label htmlFor="login-doctor-select" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5">
-                  <Stethoscope className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t('login.doctor')}
-                </label>
-                {doctors.length === 1 ? (
-                  <div className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 text-slate-900 dark:text-white text-xs flex items-center gap-2 min-h-[48px]">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
-                    {doctors[0].name} — {doctors[0].specialization}
-                  </div>
-                ) : (
-                  <select
-                    id="login-doctor-select"
-                    required
-                    value={doctorId ?? ''}
-                    onChange={(e) => setDoctorId(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none min-h-[48px]"
-                  >
-                    <option value="" disabled>{t('login.select.doctor')}</option>
-                    {doctors.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name} — {d.specialization}</option>
-                    ))}
-                  </select>
-                )}
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 font-normal">
-                  {t('login.doctor.refresh.note', "Note: If you don't see the doctor's name when booking, try to refresh or reload and wait for a minute to load the server")}
-                </p>
-              </div>
-
-              {/* Name */}
-              <div>
-                <label htmlFor="login-patient-name" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5">
-                  <User className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t('login.full.name')}
-                </label>
-                <input
-                  id="login-patient-name"
-                  type="text"
-                  required
-                  value={patientName}
-                  onChange={(e) => setPatientName(e.target.value)}
-                  placeholder="e.g. Rahim Uddin"
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[48px]"
-                />
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label htmlFor="login-patient-phone" className="flex items-center gap-2 text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5">
-                  <Phone className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> {t('login.phone')}
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-normal">{t('login.phone.optional')}</span>
-                </label>
-                <input
-                  id="login-patient-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 01712345678"
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all min-h-[48px]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={bookingLoading || !doctorId}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg shadow-md shadow-emerald-600/10 dark:shadow-emerald-600/20 transition-all active:scale-[0.98] cursor-pointer text-xs min-h-[52px]"
-              >
-                {bookingLoading ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <CalendarCheck className="w-4 h-4" />
-                    {t('login.book.serial')}
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+          ))}
+          <p className="text-blue-300 text-xs pt-4">© {new Date().getFullYear()} {siteTitle}. All rights reserved.</p>
         </div>
       </div>
 
-      {/* Staff Login Modal */}
-      {showLogin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 dark:bg-black/50 backdrop-blur-sm" onClick={() => setShowLogin(false)} />
-          <div className="relative w-full max-w-sm mx-4 bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-xl shadow-premium-lg transition-colors duration-300">
-            <div className="flex justify-between items-center mb-5">
-              <div className="flex items-center gap-2">
-                <LogIn className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('login.staff.login')}</h3>
+      {/* ── Right Content Panel ── */}
+      <div className="flex-1 flex flex-col">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-6 py-4">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1d4ed8' }}>
+              <Heart className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-sm font-bold text-slate-800 dark:text-white">{siteTitle}</span>
+          </div>
+          <div className="hidden lg:block" />
+
+          <div className="flex items-center gap-2">
+            <button onClick={toggleLang} className="px-2 py-1 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors">
+              {lang === 'en' ? 'BN' : 'EN'}
+            </button>
+            <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer transition-colors">
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => setShowLogin(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 text-xs font-semibold cursor-pointer transition-colors"
+            >
+              <LogIn className="w-3.5 h-3.5" /> Staff Login
+            </button>
+          </div>
+        </div>
+
+        {/* Form area */}
+        <div className="flex-1 flex items-center justify-center px-6 py-8">
+          <div className="w-full max-w-sm">
+            {result ? (
+              /* ── Success View ── */
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-7 text-center shadow-lg space-y-5">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center">
+                    <CheckCircle className="w-8 h-8 text-emerald-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Booking Confirmed!</h2>
+                    <p className="text-sm text-slate-400 mt-0.5">{t('login.serial.your')}</p>
+                  </div>
+                </div>
+
+                <div className="py-4 bg-blue-50 dark:bg-blue-950 rounded-2xl border border-blue-100 dark:border-blue-900">
+                  <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Serial Number</p>
+                  <p className="text-7xl font-black text-blue-600 dark:text-blue-400 tabular-nums">#{result.serial_no}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                    {t('login.serial.booked.for')}{' '}
+                    <span className="font-semibold text-slate-800 dark:text-white">{result.patient.name}</span>
+                  </p>
+                </div>
+
+                <div className="text-left space-y-1.5 text-xs text-slate-500">
+                  {[t('login.notice.present'), t('login.notice.display'), t('login.notice.receptionist')].map((n, i) => (
+                    <p key={i} className="flex items-start gap-2"><span className="text-blue-400 mt-0.5 shrink-0">•</span>{n}</p>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={downloadTokenImage} className="btn-primary btn-lg flex-1">
+                    <Download className="w-4 h-4" /> {t('login.save.token')}
+                  </button>
+                  <button onClick={() => { setResult(null); setPatientName(''); setPhone(''); }} className="btn-secondary btn-lg flex-1">
+                    {t('login.book.another')}
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => setShowLogin(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer transition-all"
-              >
+            ) : (
+              /* ── Booking Form ── */
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-7 shadow-lg">
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('login.title') || 'Walk-in Booking'}</h2>
+                  <p className="text-sm text-slate-400 mt-1">Get your serial number in seconds</p>
+                </div>
+
+                {bookingError && (
+                  <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 rounded-xl text-sm" role="alert">{bookingError}</div>
+                )}
+
+                <form onSubmit={handleBook} className="space-y-5">
+                  {/* Doctor */}
+                  <div>
+                    <label htmlFor="login-doctor-select" className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                      <Stethoscope className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      {t('login.doctor') || 'Select Doctor'}
+                    </label>
+                    {doctors.length === 1 ? (
+                      <div className="flex items-center gap-2.5 px-3.5 py-3 min-h-[44px] rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-sm font-semibold text-blue-700 dark:text-blue-300">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                        {doctors[0].name} — {doctors[0].specialization}
+                      </div>
+                    ) : (
+                      <select id="login-doctor-select" required value={doctorId ?? ''} onChange={(e) => setDoctorId(Number(e.target.value))}>
+                        <option value="" disabled>{t('login.select.doctor') || 'Choose a doctor…'}</option>
+                        {doctors.map((d) => <option key={d.id} value={d.id}>{d.name} — {d.specialization}</option>)}
+                      </select>
+                    )}
+                    <p className="mt-1.5 text-xs text-slate-400">{t('login.doctor.refresh.note', "If the doctor's name doesn't appear, please refresh the page.")}</p>
+                  </div>
+
+                  {/* Name */}
+                  <div>
+                    <label htmlFor="login-patient-name" className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                      <User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      {t('login.full.name') || 'Full Name'}
+                    </label>
+                    <input id="login-patient-name" type="text" required value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="e.g. Rahim Uddin" />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label htmlFor="login-patient-phone" className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                      <Phone className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      {t('login.phone') || 'Phone'}
+                      <span className="text-xs text-emerald-500 font-normal normal-case tracking-normal ml-1">({t('login.phone.optional') || 'optional'})</span>
+                    </label>
+                    <input id="login-patient-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 01712345678" />
+                  </div>
+
+                  <button type="submit" disabled={bookingLoading || !doctorId} className="btn-mint btn-lg w-full">
+                    {bookingLoading
+                      ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      : <><CalendarCheck className="w-4 h-4" /> {t('login.book.serial') || 'Get My Serial Number'}</>
+                    }
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Staff Login Modal ── */}
+      {showLogin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowLogin(false)} />
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-7 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <LogIn className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('login.staff.login') || 'Staff Login'}</h3>
+                  <p className="text-xs text-slate-400">{siteTitle}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowLogin(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
+            {loginError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 rounded-xl text-sm" role="alert">{loginError}</div>
+            )}
+
             <form onSubmit={handleLogin} className="space-y-4">
-              {loginError && (
-                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-xs">{loginError}</div>
-              )}
-
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5" htmlFor="modal-email">{t('login.email')}</label>
-                <input
-                  id="modal-email"
-                  type="text"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                  placeholder="name@cqmp.local or Dr. Sarah"
-                  autoFocus
-                />
+                <label htmlFor="modal-email" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">{t('login.email') || 'Email or Username'}</label>
+                <input id="modal-email" type="text" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@clinic.com" />
               </div>
-
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 text-xs font-medium mb-1.5" htmlFor="modal-password">{t('login.password')}</label>
+                <label htmlFor="modal-password" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">{t('login.password') || 'Password'}</label>
                 <div className="relative">
-                  <input
-                    id="modal-password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-10 py-2.5 text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 cursor-pointer"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                  >
+                  <input id="modal-password" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="!pr-10" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md shadow-indigo-600/10 dark:shadow-indigo-600/20 transition-all cursor-pointer text-xs"
-              >
-                {loading ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <LogIn className="w-4 h-4" />
-                    {t('login.button')}
-                  </>
-                )}
+              <button type="submit" disabled={loading} className="btn-primary btn-lg w-full mt-2">
+                {loading
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <><LogIn className="w-4 h-4" /> {t('login.button') || 'Sign In'}</>
+                }
               </button>
             </form>
           </div>
