@@ -126,12 +126,9 @@ export const ModeOverlays: React.FC = React.memo(() => {
             </div>
 
             <div className="space-y-4">
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-rose-400 tracking-tight leading-none">
-                {displayState.title_bn || 'জরুরি বিজ্ঞপ্তি'}
+              <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight leading-none">
+                {displayState.title_en || 'Emergency Patient'}
               </h1>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-                {displayState.title_en || 'Emergency Notice'}
-              </h2>
               {displayState.message_en && (
                 <p className="text-2xl text-rose-200 font-semibold pt-2">
                   {displayState.message_en}
