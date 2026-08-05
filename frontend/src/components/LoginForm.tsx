@@ -98,7 +98,8 @@ export const LoginForm: React.FC = () => {
     ctx.fillStyle = '#94a3b8'; ctx.font = '12px Inter, sans-serif';
     ctx.fillText(`${t('login.canvas.booked.on')} ${now.toLocaleDateString()} at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, 300, 380);
     const link = document.createElement('a');
-    link.download = `token_${result.serial_no}_${result.patient.name.toLowerCase().replace(/\s+/g, '_')}.png`;
+    const patientName = (result?.patient?.name || 'patient').toLowerCase().replace(/\s+/g, '_');
+    link.download = `token_${result?.serial_no || 'serial'}_${patientName}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };

@@ -185,7 +185,8 @@ export const VisitorBooking: React.FC<Props> = ({ onBack }) => {
 
     // Convert to file download
     const link = document.createElement('a');
-    link.download = `token_${result.serial_no}_${result.patient.name.toLowerCase().replace(/\s+/g, '_')}.png`;
+    const patientName = (result?.patient?.name || 'patient').toLowerCase().replace(/\s+/g, '_');
+    link.download = `token_${result?.serial_no || 'serial'}_${patientName}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };

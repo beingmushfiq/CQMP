@@ -24,9 +24,8 @@ export const useKeyboardShortcut = (shortcuts: ShortcutMap, active: boolean = tr
         return;
       }
 
-      // Check shortcuts
-      const key = event.key.toLowerCase();
-      if (shortcuts[key]) {
+      const key = (event.key || '').toLowerCase();
+      if (key && shortcuts[key]) {
         event.preventDefault();
         shortcuts[key](event);
       } else if (event.key === 'Escape' && shortcuts['escape']) {
