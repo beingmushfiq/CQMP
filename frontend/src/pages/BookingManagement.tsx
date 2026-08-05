@@ -70,6 +70,8 @@ export const BookingManagement: React.FC = () => {
     }
   };
 
+  const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       {/* Header Bar */}
@@ -299,11 +301,12 @@ export const BookingManagement: React.FC = () => {
 
                 <button
                   onClick={() => {
-                    if (window.confirm(`Are you sure you want to delete booking ${b.booking_number}?`)) {
-                      deleteBooking(b.id);
-                    }
+                    setConfirmModal({
+                      message: `Are you sure you want to delete booking ${b.booking_number}?`,
+                      onConfirm: () => deleteBooking(b.id),
+                    });
                   }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
                   title="Delete Booking"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -311,6 +314,38 @@ export const BookingManagement: React.FC = () => {
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700/80 rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="p-2.5 rounded-full bg-rose-50 dark:bg-rose-950/30">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Confirm Action</h3>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{confirmModal.message}</p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/20 transition-all cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
