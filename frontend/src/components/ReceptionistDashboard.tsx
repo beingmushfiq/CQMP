@@ -460,24 +460,24 @@ export const ReceptionistDashboard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
         {[
           { label: t('stats.waiting'), value: waitingItems.length, color: 'text-amber-500 dark:text-amber-400' },
           { label: 'In Chamber', value: calledItem ? 1 : 0, color: 'text-indigo-500 dark:text-indigo-400' },
           { label: t('stats.completed'), value: completedItems.length, color: 'text-emerald-500 dark:text-emerald-400' },
           { label: t('stats.skipped'), value: skippedItems.length, color: 'text-rose-500 dark:text-rose-400' },
         ].map((stat) => (
-          <motion.div key={stat.label} {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-4 rounded-xl shadow-premium">
+          <motion.div key={stat.label} {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-3.5 md:p-4 rounded-xl shadow-premium">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{stat.label}</p>
-            <p className={`text-2xl font-black mt-1 ${stat.color}`}>{stat.value}</p>
+            <p className={`text-xl md:text-2xl font-black mt-0.5 md:mt-1 ${stat.color}`}>{stat.value}</p>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Patient Registration Column */}
-        <div className="space-y-6">
-          <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-xl space-y-4 shadow-premium">
+        <div className="space-y-4 md:space-y-6">
+          <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-4 md:p-6 rounded-xl space-y-4 shadow-premium">
             <h2 className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-white">
               <UserPlus className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> {t('reception.register')}
             </h2>
@@ -508,12 +508,12 @@ export const ReceptionistDashboard: React.FC = () => {
                     type="text"
                     value={searchPhone}
                     onChange={(e) => setSearchPhone(e.target.value)}
-                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"
+                    className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"
                     placeholder={t('reception.phone.placeholder')}
                   />
                   <button
                     onClick={handleSearchPatient}
-                    className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 p-2 rounded-lg cursor-pointer text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                    className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 p-2 rounded-lg cursor-pointer text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0"
                     title="Look up patient by phone"
                   >
                     <Search className="w-4 h-4" />
@@ -539,7 +539,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   <select
                     value={ageUnit}
                     onChange={(e) => setAgeUnit(e.target.value as 'Years' | 'Months')}
-                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
+                    className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs"
                   >
                     <option value="Years">Years</option>
                     <option value="Months">Months</option>
@@ -572,7 +572,7 @@ export const ReceptionistDashboard: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <button
                   onClick={() => handleRegister(false)}
                   disabled={!queueDay || patientRecord?.is_blocked || !patientName}
@@ -592,7 +592,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </motion.div>
 
           {/* Display Mode Controls */}
-          <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-5 rounded-xl space-y-3 shadow-premium">
+          <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-4 md:p-5 rounded-xl space-y-3 shadow-premium">
             <h2 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Monitor className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
               Display Controls
@@ -674,11 +674,11 @@ export const ReceptionistDashboard: React.FC = () => {
         </div>
 
         {/* Center Column - Queue Board */}
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-6 rounded-xl space-y-6 shadow-premium">
-            <div className="flex justify-between items-center">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-slate-200/80 dark:border-slate-700/80 p-4 md:p-6 rounded-xl space-y-4 md:space-y-6 shadow-premium">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">Active Queue Board</h2>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <span className={`w-2 h-2 rounded-full animate-pulse ${
                   queueDay?.status === 'opened' ? 'bg-emerald-400'
                   : queueDay?.status === 'paused' ? 'bg-amber-400'
@@ -781,7 +781,7 @@ export const ReceptionistDashboard: React.FC = () => {
                   <div className="mt-2">
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white">{calledItem.patient.name}</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-xs">Serial #{calledItem.serial_no} | {calledItem.patient.phone}</p>
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       <button
                         onClick={() => completeItem(calledItem.id)}
                         className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer shadow-md shadow-emerald-600/10 transition-all"

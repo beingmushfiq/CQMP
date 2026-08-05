@@ -303,7 +303,10 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
               <p className="section-label px-3 mb-3">Navigation</p>
               {navItems.map((item) => <NavButton key={item.id} item={item} />)}
             </nav>
-            <div className="border-t border-slate-100 dark:border-slate-800 p-3 flex items-center gap-3">
+            <div
+              onClick={() => { setProfileOpen(true); setMobileMenuOpen(false); }}
+              className="border-t border-slate-100 dark:border-slate-800 p-3 flex items-center gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-2 ring-blue-100 dark:ring-blue-900" />
               ) : (
@@ -315,7 +318,11 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
                 <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{user?.name || '—'}</p>
                 <p className="text-[10px] text-slate-400 truncate">{userRoles[0] || ''}</p>
               </div>
-              <button onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 cursor-pointer transition-colors">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleLogout(); }}
+                className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 cursor-pointer transition-colors"
+                title="Log out"
+              >
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
