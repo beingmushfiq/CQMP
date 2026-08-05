@@ -112,6 +112,18 @@ const en = {
   'reception.priority.emergency.label': 'Emergency',
   'reception.priority.emergency.desc': 'Urgent priority',
 
+  'reception.clear.queue': 'Clear Queue',
+  'reception.clear.waiting': 'Clear Waiting Queue',
+  'reception.clear.completed': 'Clear Completed List',
+  'reception.clear.skipped': 'Clear Skipped List',
+  'reception.clear.all': 'Clear All Queue',
+  'reception.end.queue': 'End Queue for Today',
+  'reception.confirm.clear.waiting': 'Are you sure you want to clear all waiting patients from today\'s queue?',
+  'reception.confirm.clear.completed': 'Are you sure you want to clear all completed records from today\'s queue?',
+  'reception.confirm.clear.skipped': 'Are you sure you want to clear all skipped records from today\'s queue?',
+  'reception.confirm.clear.all': 'Are you sure you want to clear the ENTIRE queue for today?',
+  'reception.confirm.end.queue': 'Are you sure you want to END the queue session for today? Patients will no longer be called.',
+
   // Reception - Toasts
   'reception.toast.added': 'Patient {{name}} successfully added to the queue!',
   'reception.toast.blocked': 'Patient is blocked or registration failed.',

@@ -217,6 +217,37 @@ class QueueController extends Controller
     }
 
     /**
+     * POST /api/v1/queue/clear
+     */
+    public function clear(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'queue_day_id' => ['required', 'exists:queue_days,id'],
+            'target'       => ['required', 'string', 'in:all,waiting,completed,skipped'],
+        ]);
+
+        $queueDay = QueueDay::findOrFail($data['queue_day_id']);
+        $this->queue->clearQueue($queueDay, $data['target']);
+        $this->audit->log('queue.cleared', details: "Target: {$data['target']}", request: $request);
+
+        return response()->json(['message' => "Queue cleared for target: {$data['target']}."]);
+    }
+
+    /**
+     * POST /api/v1/queue/close
+     */
+    public function close(Request $request): JsonResponse
+    {
+        $request->validate(['queue_day_id' => ['required', 'exists:queue_days,id']]);
+        $queueDay = QueueDay::findOrFail($request->queue_day_id);
+        $this->queue->closeQueue($queueDay);
+        $this->audit->log('queue.closed', request: $request);
+
+        return response()->json(['status' => 'closed', 'message' => 'Queue session closed for today.']);
+    }
+
+
+    /**
      * POST /api/v1/doctor/delay
      */
     public function updateDelay(Request $request): JsonResponse
@@ -276,6 +307,7 @@ class QueueController extends Controller
     {
         $request->validate(['doctor_id' => ['required', 'exists:doctors,id']]);
 
+        /** @var QueueDay|null $queueDay */
         $queueDay = QueueDay::where('doctor_id', $request->doctor_id)
             ->where('date', '>=', Carbon::today()->startOfDay())
             ->where('date', '<=', Carbon::today()->endOfDay())

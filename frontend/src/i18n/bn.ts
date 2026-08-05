@@ -112,6 +112,18 @@ const bn: Record<string, string> = {
   'reception.priority.emergency.label': 'জরুরি',
   'reception.priority.emergency.desc': 'অত্যাবশ্যক অগ্রাধিকার',
 
+  'reception.clear.queue': 'কিউ খালি করুন',
+  'reception.clear.waiting': 'অপেক্ষমান কিউ খালি করুন',
+  'reception.clear.completed': 'সম্পন্ন তালিকা খালি করুন',
+  'reception.clear.skipped': 'বাদ পড়া তালিকা খালি করুন',
+  'reception.clear.all': 'সম্পূর্ণ কিউ খালি করুন',
+  'reception.end.queue': 'আজকের কিউ শেষ করুন',
+  'reception.confirm.clear.waiting': 'আপনি কি নিশ্চিত যে আজকের কিউ থেকে সব অপেক্ষমান রোগী মুছে ফেলবেন?',
+  'reception.confirm.clear.completed': 'আপনি কি নিশ্চিত যে আজকের কিউ থেকে সব সম্পন্ন রেকর্ড মুছে ফেলবেন?',
+  'reception.confirm.clear.skipped': 'আপনি কি নিশ্চিত যে আজকের কিউ থেকে সব বাদ পড়া রেকর্ড মুছে ফেলবেন?',
+  'reception.confirm.clear.all': 'আপনি কি নিশ্চিত যে আজকের পুরো কিউ মুছে ফেলবেন?',
+  'reception.confirm.end.queue': 'আপনি কি নিশ্চিত যে আজকের কিউ সেশন সমাপ্ত ঘোষণা করবেন?',
+
   // Reception - Toasts
   'reception.toast.added': 'রোগী {{name}} সফলভাবে কিউতে যোগ করা হয়েছে!',
   'reception.toast.blocked': 'রোগী ব্লক করা হয়েছে বা নিবন্ধন ব্যর্থ।',

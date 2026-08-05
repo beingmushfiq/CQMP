@@ -11,8 +11,8 @@ interface CurrentSerialHeroProps {
 export const CurrentSerialHero: React.FC<CurrentSerialHeroProps> = React.memo(({ activeItem, onRepeatAudio }) => {
   return (
     <div
-      className="w-full bg-slate-900/90 border border-slate-800 rounded-3xl flex flex-col shadow-2xl overflow-hidden"
-      style={{ padding: '1.5cqh 2cqw', gap: '1.5cqh', flex: '0 0 auto' }}
+      className="w-full bg-slate-900/90 border border-slate-800 rounded-3xl flex flex-col justify-between shadow-2xl overflow-hidden min-h-0"
+      style={{ padding: '1.5cqh 2cqw', gap: '1cqh', flex: '1 1 0' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-800/80" style={{ paddingBottom: '1cqh' }}>
@@ -40,8 +40,8 @@ export const CurrentSerialHero: React.FC<CurrentSerialHeroProps> = React.memo(({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="flex flex-col items-center justify-center text-center"
-            style={{ gap: '0.8cqh', padding: '1cqh 0' }}
+            className="flex-1 flex flex-col items-center justify-center text-center min-h-0"
+            style={{ gap: '0.8cqh', padding: '0.5cqh 0' }}
           >
             {/* Current Serial Number */}
             <div

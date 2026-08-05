@@ -21,7 +21,7 @@ export interface QueueItem {
 
 export interface QueueDay {
   id: number;
-  status: 'opened' | 'paused';
+  status: 'opened' | 'paused' | 'closed';
   date: string;
   opened_at: string;
 }
@@ -43,6 +43,8 @@ interface QueueState {
   reinsertItem: (itemId: number, position: number) => Promise<void>;
   insertEmergency: (patientId: number) => Promise<void>;
   toggleQueuePause: () => Promise<void>;
+  clearQueue: (target: 'all' | 'waiting' | 'completed' | 'skipped') => Promise<void>;
+  closeQueue: () => Promise<void>;
   subscribeToQueue: (queueDayId: number) => void;
   unsubscribeFromQueue: (queueDayId: number) => void;
   subscribeToDoctor: (doctorId: number) => void;
@@ -212,6 +214,27 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     });
   },
 
+  clearQueue: async (target) => {
+    const { queueDay, activeDoctorId, fetchTodayQueue } = get();
+    if (!queueDay) return;
+    await api.post('/queue/clear', { queue_day_id: queueDay.id, target });
+    if (activeDoctorId) {
+      await fetchTodayQueue(activeDoctorId, false);
+    }
+  },
+
+  closeQueue: async () => {
+    const { queueDay } = get();
+    if (!queueDay) return;
+    const response = await api.post('/queue/close', { queue_day_id: queueDay.id });
+    set({
+      queueDay: {
+        ...queueDay,
+        status: response.data.status,
+      },
+    });
+  },
+
   subscribeToQueue: (queueDayId) => {
     const channelName = `queue.${queueDayId}`;
     // Leave existing to avoid duplicate listeners
@@ -241,6 +264,9 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     const onResumed = () => {
       set((state) => state.queueDay ? { queueDay: { ...state.queueDay, status: 'opened' } } : {});
     };
+    const onClosed = () => {
+      set((state) => state.queueDay ? { queueDay: { ...state.queueDay, status: 'closed' } } : {});
+    };
     const onEmergency = (e: { queue_item: QueueItem }) => {
       set((state) => ({
         items: [
@@ -266,6 +292,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
       .listen('QueueCompleted', onCompleted).listen('.QueueCompleted', onCompleted)
       .listen('QueueFrozen', onFrozen).listen('.QueueFrozen', onFrozen)
       .listen('QueueResumed', onResumed).listen('.QueueResumed', onResumed)
+      .listen('QueueClosed', onClosed).listen('.QueueClosed', onClosed)
       .listen('EmergencyInserted', onEmergency).listen('.EmergencyInserted', onEmergency)
       .listen('EstimatedTimeUpdated', onTimeUpdated).listen('.EstimatedTimeUpdated', onTimeUpdated)
       .listen('QueueDeleted', onDeleted).listen('.QueueDeleted', onDeleted);

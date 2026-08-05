@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useLanguageStore } from '../store/useLanguageStore';
 import api from '../utils/api';
-import { Search, UserPlus, ShieldAlert, ArrowDownUp, PhoneCall, Printer, Trash2, CheckCircle2, SkipForward, X, AlertTriangle, Bookmark, Pause, Play, Volume2, VolumeX, Coffee, Monitor, FileText, Pencil, Check } from 'lucide-react';
+import { Search, UserPlus, ShieldAlert, ArrowDownUp, PhoneCall, Printer, Trash2, CheckCircle2, SkipForward, X, AlertTriangle, Bookmark, Pause, Play, Volume2, VolumeX, Coffee, Monitor, FileText, Pencil, Check, StopCircle, RotateCcw, ChevronDown } from 'lucide-react';
 import { useKeyboardShortcut } from '../hooks/useKeyboardShortcut';
 import { useDisplayModeContext } from './DisplayModeContext';
 import { AudioControlPanel } from './AudioControlPanel';
@@ -30,7 +30,7 @@ function saveSmartDefault(name: string, phone: string) {
 }
 
 export const ReceptionistDashboard: React.FC = () => {
-  const { queueDay, items, fetchTodayQueue, registerWalkIn, insertEmergency, reinsertItem, deleteItem, completeItem, skipItem, toggleQueuePause, callNext } = useQueueStore();
+  const { queueDay, items, fetchTodayQueue, registerWalkIn, insertEmergency, reinsertItem, deleteItem, completeItem, skipItem, toggleQueuePause, callNext, clearQueue, closeQueue } = useQueueStore();
   const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no);
   const calledItem = items.find((i) => i.status === 'Called');
   const completedItems = items.filter((i) => i.status === 'Completed').sort((a, b) => a.serial_no - b.serial_no);
@@ -63,9 +63,51 @@ export const ReceptionistDashboard: React.FC = () => {
   // Emergency/Reserved modal state
   const [showPriorityModal, setShowPriorityModal] = useState(false);
 
+  // Clear Menu Dropdown state
+  const [showClearMenu, setShowClearMenu] = useState(false);
+
   // Confirm modal state
   const [confirmModal, setConfirmModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [displayLoading, setDisplayLoading] = useState(false);
+
+  const handleClearQueue = (target: 'all' | 'waiting' | 'completed' | 'skipped') => {
+    setShowClearMenu(false);
+    const messages = {
+      waiting: t('reception.confirm.clear.waiting'),
+      completed: t('reception.confirm.clear.completed'),
+      skipped: t('reception.confirm.clear.skipped'),
+      all: t('reception.confirm.clear.all'),
+    };
+    setConfirmModal({
+      message: messages[target],
+      onConfirm: async () => {
+        try {
+          await clearQueue(target);
+          setToast({ message: `Queue cleared (${target}).`, type: 'success' });
+          setTimeout(() => setToast(null), 3000);
+        } catch {
+          setToast({ message: 'Failed to clear queue.', type: 'error' });
+          setTimeout(() => setToast(null), 3000);
+        }
+      },
+    });
+  };
+
+  const handleEndQueue = () => {
+    setConfirmModal({
+      message: t('reception.confirm.end.queue'),
+      onConfirm: async () => {
+        try {
+          await closeQueue();
+          setToast({ message: 'Queue session ended for today.', type: 'success' });
+          setTimeout(() => setToast(null), 3000);
+        } catch {
+          setToast({ message: 'Failed to end queue session.', type: 'error' });
+          setTimeout(() => setToast(null), 3000);
+        }
+      },
+    });
+  };
   const { mode: displayMode, setMode: setDisplayMode, resume: resumeDisplay } = useDisplayModeContext();
 
   // Audio settings & logic
@@ -652,16 +694,80 @@ export const ReceptionistDashboard: React.FC = () => {
                   {queueDay?.status === 'opened' ? 'Open' : queueDay?.status === 'paused' ? 'Paused' : 'Closed'}
                 </span>
                 {queueDay && (
-                  <button
-                    onClick={toggleQueuePause}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
-                      queueDay.status === 'opened'
-                        ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                    }`}
-                  >
-                    {queueDay.status === 'opened' ? <><Pause className="w-3 h-3" /> {t('reception.pause')}</> : <><Play className="w-3 h-3" /> {t('reception.resume')}</>}
-                  </button>
+                  <>
+                    <button
+                      onClick={toggleQueuePause}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                        queueDay.status === 'opened'
+                          ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                          : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                      }`}
+                    >
+                      {queueDay.status === 'opened' ? <><Pause className="w-3 h-3" /> {t('reception.pause')}</> : <><Play className="w-3 h-3" /> {t('reception.resume')}</>}
+                    </button>
+
+                    {/* Clear Queue Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowClearMenu(!showClearMenu)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all"
+                        title={t('reception.clear.queue')}
+                      >
+                        <RotateCcw className="w-3 h-3 text-slate-500" />
+                        <span>{t('reception.clear.queue')}</span>
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+
+                      {showClearMenu && (
+                        <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-20 overflow-hidden py-1">
+                          <button
+                            onClick={() => handleClearQueue('waiting')}
+                            disabled={waitingItems.length === 0 && !calledItem}
+                            className="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-40 cursor-pointer flex items-center justify-between"
+                          >
+                            <span>{t('reception.clear.waiting')}</span>
+                            <span className="text-[10px] text-slate-400 font-bold">({waitingItems.length + (calledItem ? 1 : 0)})</span>
+                          </button>
+                          <button
+                            onClick={() => handleClearQueue('completed')}
+                            disabled={completedItems.length === 0}
+                            className="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-40 cursor-pointer flex items-center justify-between"
+                          >
+                            <span>{t('reception.clear.completed')}</span>
+                            <span className="text-[10px] text-slate-400 font-bold">({completedItems.length})</span>
+                          </button>
+                          <button
+                            onClick={() => handleClearQueue('skipped')}
+                            disabled={skippedItems.length === 0}
+                            className="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 disabled:opacity-40 cursor-pointer flex items-center justify-between"
+                          >
+                            <span>{t('reception.clear.skipped')}</span>
+                            <span className="text-[10px] text-slate-400 font-bold">({skippedItems.length})</span>
+                          </button>
+                          <div className="border-t border-slate-200 dark:border-slate-700/80 my-1" />
+                          <button
+                            onClick={() => handleClearQueue('all')}
+                            disabled={items.length === 0}
+                            className="w-full text-left px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 font-semibold cursor-pointer flex items-center justify-between"
+                          >
+                            <span>{t('reception.clear.all')}</span>
+                            <span className="text-[10px] text-rose-400 font-bold">({items.length})</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* End Queue for Today Button */}
+                    <button
+                      onClick={handleEndQueue}
+                      disabled={queueDay.status === 'closed'}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 disabled:opacity-40 cursor-pointer transition-all"
+                      title={t('reception.end.queue')}
+                    >
+                      <StopCircle className="w-3 h-3" />
+                      <span>{t('reception.end.queue')}</span>
+                    </button>
+                  </>
                 )}
                 <AudioToggle />
               </div>

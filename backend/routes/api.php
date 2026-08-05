@@ -95,6 +95,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('/emergency', [QueueController::class, 'emergency'])->name('emergency');
                 Route::post('/freeze',    [QueueController::class, 'freeze'])->name('freeze');
                 Route::post('/resume',    [QueueController::class, 'resume'])->name('resume');
+                Route::post('/clear',     [QueueController::class, 'clear'])->name('clear');
+                Route::post('/close',     [QueueController::class, 'close'])->name('close');
                 Route::delete('/{queueItem}', [QueueController::class, 'destroy'])->name('delete');
             });
         });

@@ -110,6 +110,7 @@ class QueueEngine
             // Mark currently called item as "Inside Chamber" (intermediate) if needed
             // For simplicity: move any currently Called item to waiting (will be handled by receptionist "complete")
 
+            /** @var QueueItem|null $nextItem */
             $nextItem = QueueItem::where('queue_day_id', $queueDay->id)
                 ->where('status', 'Waiting')
                 ->orderBy('priority', 'desc') // Emergency > Normal
@@ -347,4 +348,51 @@ class QueueEngine
             }
         });
     }
+
+    /**
+     * Clear queue items based on target filter (all, waiting, completed, skipped).
+     */
+    public function clearQueue(QueueDay $queueDay, string $target): void
+    {
+        DB::transaction(function () use ($queueDay, $target) {
+            $query = QueueItem::where('queue_day_id', $queueDay->id);
+
+            if ($target === 'waiting') {
+                $query->whereIn('status', ['Waiting', 'Called']);
+            } elseif ($target === 'completed') {
+                $query->where('status', 'Completed');
+            } elseif ($target === 'skipped') {
+                $query->where('status', 'Skipped');
+            }
+
+            $deletedItems = $query->get(['id']);
+            $query->delete();
+
+            foreach ($deletedItems as $item) {
+                rescue(function () use ($item, $queueDay) {
+                    broadcast(new QueueDeleted($item->id, $queueDay->id, $queueDay->doctor_id));
+                }, report: false);
+            }
+
+            $this->recalculateWaitTimes($queueDay);
+        });
+    }
+
+    /**
+     * Manually close the queue session for today.
+     */
+    public function closeQueue(QueueDay $queueDay): QueueDay
+    {
+        $queueDay->update([
+            'status'    => 'closed',
+            'closed_at' => Carbon::now(),
+        ]);
+
+        rescue(function () use ($queueDay) {
+            broadcast(new \App\Events\QueueClosed($queueDay));
+        }, report: false);
+
+        return $queueDay;
+    }
 }
+
