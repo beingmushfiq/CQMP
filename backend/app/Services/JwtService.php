@@ -19,8 +19,14 @@ class JwtService
     /**
      * Encode payload array into JWT string (HS256).
      */
-    public static function generateToken(User $user, int $ttlMinutes = 120): string
+    public static function generateToken(User $user, int $ttlMinutes = -1): string
     {
+        // Default TTL: read from JWT_TTL_MINUTES env var (fallback: 1440 = 24 hours).
+        // TV kiosks run 24/7 — the old 120-minute default forced re-login every 2 hours.
+        if ($ttlMinutes < 0) {
+            $ttlMinutes = (int) env('JWT_TTL_MINUTES', 1440);
+        }
+
         $header = [
             'typ' => 'JWT',
             'alg' => 'HS256'

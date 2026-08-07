@@ -74,6 +74,26 @@ export const createPublicApi = () =>
     withCredentials: true,
   });
 
+/**
+ * Login-only API instance — withCredentials DISABLED intentionally.
+ *
+ * Why: Fully Kiosk Browser (Android WebView) can block cross-origin
+ * credentialed CORS preflight requests even when the server's CORS config
+ * is correct. Since the auth token is returned in the JSON body (not a
+ * cookie), credentials are not needed for the /login endpoint itself.
+ * Using withCredentials: false avoids the preflight for this one call
+ * while keeping the authenticated `api` instance unchanged.
+ */
+export const loginApi = axios.create({
+  baseURL: getApiBaseUrl(),
+  timeout: 15_000,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
+  withCredentials: false,
+});
+
 // ── Authenticated Axios singleton ──────────────────────────────────────
 const api = axios.create({
   baseURL: getApiBaseUrl(),
@@ -86,6 +106,14 @@ const api = axios.create({
   // (serial.ferozamedicinecorner.com ↔ api.ferozamedicinecorner.com)
   withCredentials: true,
 });
+
+// ── Unauthorized handler registry ─────────────────────────────────────
+// useAuthStore calls registerUnauthorizedHandler() once after creation so
+// the 401 interceptor below can trigger logout without a circular import.
+let _unauthorizedHandler: (() => void) | null = null;
+export const registerUnauthorizedHandler = (fn: () => void): void => {
+  _unauthorizedHandler = fn;
+};
 
 // ── Request Interceptor — attach Bearer token ──────────────────────────
 api.interceptors.request.use((config) => {
@@ -129,11 +157,10 @@ api.interceptors.response.use(
       // and must remain visible even without an authenticated session.
       const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
       if (path !== '/tv' && path !== '/display' && !path.includes('/login')) {
-        // Route through the auth store so Socket.IO is always disconnected cleanly.
-        // Lazy import to avoid circular dependency at module init time.
-        import('../store/useAuthStore').then(({ useAuthStore }) => {
-          useAuthStore.getState().logout();
-        });
+        // Invoke the registered logout callback (set by useAuthStore).
+        // Registry pattern avoids a circular static import while also
+        // silencing the Vite INEFFECTIVE_DYNAMIC_IMPORT warning.
+        _unauthorizedHandler?.();
       }
     }
 

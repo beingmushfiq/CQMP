@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import api from '../utils/api';
+import api, { loginApi, registerUnauthorizedHandler } from '../utils/api';
 import { echo } from '../utils/echo';
+import { useQueueStore } from './useQueueStore';
 
 interface User {
   id: number;
@@ -28,7 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      const response = await api.post('/login', { email, password });
+      const response = await loginApi.post('/login', { email, password });
       const { token, user } = response.data;
       localStorage.setItem('cqmp_token', token);
       set({ token, user: user.data, loading: false });
@@ -46,11 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try { echo.disconnect(); } catch { /* ignore */ }
 
     // 2. Clear queue polling timers and WebSocket subscriptions
-    //    Lazy import to avoid circular dependency at module init time.
-    try {
-      const { useQueueStore } = await import('./useQueueStore');
-      useQueueStore.getState().resetQueue();
-    } catch { /* ignore */ }
+    try { useQueueStore.getState().resetQueue(); } catch { /* ignore */ }
 
     // 3. Wipe every CQMP key from localStorage
     const keysToRemove = Object.keys(localStorage).filter((k) => k.startsWith('cqmp_'));
@@ -77,3 +74,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: state.user ? { ...state.user, ...data } : null,
   })),
 }));
+
+// Wire up the 401 → logout path in api.ts without a circular import.
+// Called once at module init time; safe because the store is fully
+// created above before this line executes.
+registerUnauthorizedHandler(() => useAuthStore.getState().logout());
