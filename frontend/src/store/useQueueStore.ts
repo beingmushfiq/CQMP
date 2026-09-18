@@ -11,11 +11,14 @@ export interface Patient {
 export interface QueueItem {
   id: number;
   serial_no: number;
+  queue_order?: number;
   appointment_type: string;
   status: 'Waiting' | 'Called' | 'Completed' | 'Skipped';
   priority: 'Normal' | 'Emergency' | 'Reserved';
   estimated_wait: number;
   called_at: string | null;
+  completed_at?: string | null;
+  skipped_at?: string | null;
   patient: Patient;
 }
 
@@ -38,6 +41,8 @@ interface QueueState {
   registerWalkIn: (patientId: number, serialNo?: number, priority?: string) => Promise<void>;
   deleteItem: (itemId: number) => Promise<void>;
   callNext: () => Promise<void>;
+  callItem: (itemId: number, previousAction?: 'waiting' | 'complete' | 'skip') => Promise<void>;
+  updateSerial: (itemId: number, serialNo: number) => Promise<void>;
   completeItem: (itemId: number) => Promise<void>;
   skipItem: (itemId: number) => Promise<void>;
   reinsertItem: (itemId: number, position: number) => Promise<void>;
@@ -165,6 +170,23 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     const { queueDay } = get();
     if (!queueDay) return;
     await api.post('/queue/call-next', { queue_day_id: queueDay.id });
+    const { activeDoctorId, fetchTodayQueue } = get();
+    if (activeDoctorId) await fetchTodayQueue(activeDoctorId);
+  },
+
+  callItem: async (itemId, previousAction = 'waiting') => {
+    await api.post('/queue/call', { queue_item_id: itemId, previous_action: previousAction });
+    const { activeDoctorId, fetchTodayQueue } = get();
+    if (activeDoctorId) await fetchTodayQueue(activeDoctorId);
+  },
+
+  updateSerial: async (itemId, serialNo) => {
+    await api.post('/queue/update-serial', { queue_item_id: itemId, serial_no: serialNo });
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === itemId ? { ...item, serial_no: serialNo } : item
+      ),
+    }));
   },
 
   completeItem: async (itemId) => {
@@ -271,7 +293,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
       set((state) => ({
         items: [
           e.queue_item,
-          ...state.items.map((item) => (item.status === 'Waiting' ? { ...item, serial_no: item.serial_no + 1 } : item)),
+          ...state.items.filter((item) => item.id !== e.queue_item.id),
         ],
       }));
     };

@@ -337,7 +337,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Save Button & Messaging */}
-      <div className="flex items-center gap-4 pt-2 pb-6">
+      <div className="flex items-center gap-4 pt-2">
         <button
           onClick={handleSave}
           disabled={saving}
@@ -352,6 +352,34 @@ export const SettingsPage: React.FC = () => {
             {msg.text}
           </p>
         )}
+      </div>
+
+      {/* DevCenterPoint System Attribution Card */}
+      <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs pb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-black text-white text-sm shadow-md shrink-0">
+            DCP
+          </div>
+          <div>
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              CQMP Practice Suite
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-semibold">
+                v2.4.0 Production
+              </span>
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 mt-0.5">
+              Engineered & Maintained by <a href="https://devcenterpoint.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">DevCenterPoint</a>
+            </p>
+          </div>
+        </div>
+        <a
+          href="https://devcenterpoint.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-500 text-slate-700 dark:text-slate-200 font-medium transition-colors cursor-pointer"
+        >
+          devcenterpoint.com ↗
+        </a>
       </div>
     </div>
   );

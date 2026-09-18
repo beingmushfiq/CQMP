@@ -89,6 +89,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('/open',      [QueueController::class, 'open'])->name('open');
                 Route::post('/create',    [QueueController::class, 'create'])->name('create');
                 Route::post('/call-next', [QueueController::class, 'callNext'])->name('call-next');
+                Route::post('/call',      [QueueController::class, 'call'])->name('call');
+                Route::post('/update-serial', [QueueController::class, 'updateSerial'])->name('update-serial');
                 Route::post('/complete',  [QueueController::class, 'complete'])->name('complete');
                 Route::post('/skip',      [QueueController::class, 'skip'])->name('skip');
                 Route::post('/reinsert',  [QueueController::class, 'reinsert'])->name('reinsert');

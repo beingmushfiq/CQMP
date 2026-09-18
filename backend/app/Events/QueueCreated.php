@@ -39,6 +39,7 @@ class QueueCreated implements ShouldBroadcast
             'queue_item' => [
                 'id'               => $this->queueItem->id,
                 'serial_no'        => $this->queueItem->serial_no,
+                'queue_order'      => $this->queueItem->queue_order ?? $this->queueItem->serial_no,
                 'appointment_type' => $this->queueItem->appointment_type,
                 'status'           => $this->queueItem->status,
                 'priority'         => $this->queueItem->priority,

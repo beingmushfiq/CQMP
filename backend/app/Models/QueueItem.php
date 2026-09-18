@@ -33,6 +33,7 @@ class QueueItem extends Model
         'queue_day_id',
         'patient_id',
         'serial_no',
+        'queue_order',
         'appointment_type',
         'status',
         'priority',
@@ -44,6 +45,7 @@ class QueueItem extends Model
 
     protected $casts = [
         'serial_no' => 'integer',
+        'queue_order' => 'integer',
         'estimated_wait' => 'integer',
         'called_at' => 'datetime',
         'completed_at' => 'datetime',

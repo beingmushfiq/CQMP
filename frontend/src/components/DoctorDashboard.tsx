@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore } from '../store/useQueueStore';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
-import { Play, Pause, ChevronRight, UserCheck, AlertCircle, Clock, LogOut, Sun, Moon, Stethoscope, Coffee, ShieldAlert, FileText, Monitor, Calendar } from 'lucide-react';
+import { Play, Pause, ChevronRight, UserCheck, AlertCircle, Clock, LogOut, Sun, Moon, Stethoscope, Coffee, ShieldAlert, FileText, Monitor, Calendar, PhoneCall, AlertTriangle } from 'lucide-react';
 
 import { useThemeStore } from '../store/useThemeStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -18,7 +18,7 @@ import { AudioControlPanel } from './AudioControlPanel';
 const fadeIn = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
 
 export const DoctorDashboard: React.FC = () => {
-  const { queueDay, items, fetchTodayQueue, openQueue, callNext, completeItem, skipItem, toggleQueuePause, resetQueue } = useQueueStore();
+  const { queueDay, items, fetchTodayQueue, openQueue, callNext, callItem, completeItem, skipItem, toggleQueuePause, resetQueue } = useQueueStore();
   const { logout, user } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const { get: getSetting } = useSettingsStore();
@@ -30,11 +30,31 @@ export const DoctorDashboard: React.FC = () => {
   const [openError, setOpenError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const [displayLoading, setDisplayLoading] = useState(false);
+  const [callConflictModal, setCallConflictModal] = useState<{ targetItem: any } | null>(null);
 
   const { mode: displayMode, setMode: setDisplayMode, resume: resumeDisplay } = useDisplayModeContext();
 
   const activeItem = items.find((i) => i.status === 'Called');
-  const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no);
+  const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no));
+  const skippedItems = items.filter((i) => i.status === 'Skipped').sort((a, b) => (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no));
+
+  const handleInitiateCall = (targetItem: any) => {
+    if (activeItem && activeItem.id !== targetItem.id) {
+      setCallConflictModal({ targetItem });
+    } else {
+      performCall(targetItem.id);
+    }
+  };
+
+  const performCall = async (targetItemId: number, prevAction: 'waiting' | 'complete' | 'skip' = 'waiting') => {
+    try {
+      await callItem(targetItemId, prevAction);
+    } catch (err: any) {
+      console.error('Call failed', err);
+    } finally {
+      setCallConflictModal(null);
+    }
+  };
 
   useKeyboardShortcut({
     '1': () => { if (!selectedDoctorId && doctors[0]) handleSelectDoctor(doctors[0].id); },
@@ -376,15 +396,148 @@ export const DoctorDashboard: React.FC = () => {
                             <span className="text-[10px] bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-full font-bold">{t('doctor.emergency')}</span>
                           )}
                         </div>
-
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleInitiateCall(item)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-[11px] cursor-pointer shadow-sm transition-all active:scale-95"
+                            title="Call this patient"
+                          >
+                            <PhoneCall className="w-3 h-3" />
+                            <span>Call</span>
+                          </button>
+                          <button
+                            onClick={() => skipItem(item.id)}
+                            className="px-2 py-1.5 text-slate-400 hover:text-amber-500 font-medium rounded-lg text-[11px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-all"
+                            title="Skip patient"
+                          >
+                            Skip
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
               </motion.div>
+
+              {/* Skipped Patients List */}
+              {skippedItems.length > 0 && (
+                <motion.div {...fadeIn} className="bg-white dark:bg-surface-card border border-amber-200/80 dark:border-amber-900/40 p-5 rounded-xl space-y-4 shadow-premium">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      Skipped Patients ({skippedItems.length})
+                    </h2>
+                  </div>
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {skippedItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-amber-50/40 dark:bg-amber-950/10 border border-amber-200/60 dark:border-amber-900/30 p-3 rounded-xl flex justify-between items-center text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-amber-600 dark:text-amber-400">#{item.serial_no}</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{item.patient.name}</span>
+                        </div>
+                        <button
+                          onClick={() => handleInitiateCall(item)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg text-[11px] cursor-pointer shadow-sm transition-all active:scale-95"
+                        >
+                          <PhoneCall className="w-3 h-3" />
+                          <span>Call Now</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         )}
+
+        {/* Call Conflict Modal (when someone is already inside the chamber) */}
+        <AnimatePresence>
+          {callConflictModal && activeItem && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={() => setCallConflictModal(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700 rounded-2xl shadow-premium-2xl p-6 w-full max-w-md"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800 dark:text-white">Patient Already in Chamber</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{activeItem.patient.name}</span> (#{activeItem.serial_no}) is currently in the chamber.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/40 rounded-xl mb-5 text-xs text-indigo-800 dark:text-indigo-300">
+                  You are calling <span className="font-bold">{callConflictModal.targetItem.patient.name}</span> (Serial #{callConflictModal.targetItem.serial_no}). What would you like to do with <span className="font-bold">{activeItem.patient.name}</span>?
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={() => performCall(callConflictModal.targetItem.id, 'waiting')}
+                    className="w-full py-2.5 px-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-700/50 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      Return {activeItem.patient.name} back to Waiting queue
+                    </span>
+                    <span className="text-[11px] opacity-75">Keep turn</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => performCall(callConflictModal.targetItem.id, 'complete')}
+                    className="w-full py-2.5 px-4 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Mark {activeItem.patient.name} as Completed
+                    </span>
+                    <span className="text-[11px] opacity-75">Done</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => performCall(callConflictModal.targetItem.id, 'skip')}
+                    className="w-full py-2.5 px-4 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-700/50 text-amber-700 dark:text-amber-300 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      Mark {activeItem.patient.name} as Skipped
+                    </span>
+                    <span className="text-[11px] opacity-75">Absent</span>
+                  </button>
+                </div>
+
+                <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setCallConflictModal(null)}
+                    className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ── Mobile Bottom Navbar ── */}

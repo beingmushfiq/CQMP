@@ -152,7 +152,20 @@ export const LoginForm: React.FC = () => {
               <p className="text-blue-100 text-sm leading-relaxed">{f.text}</p>
             </div>
           ))}
-          <p className="text-blue-300 text-xs pt-4">© {new Date().getFullYear()} {siteTitle}. All rights reserved.</p>
+          <div className="pt-4 border-t border-blue-400/20 text-xs text-blue-200 flex flex-col gap-0.5">
+            <p>© {new Date().getFullYear()} {siteTitle}. All rights reserved.</p>
+            <p className="text-blue-300 text-[11px]">
+              Engineered & Powered by{' '}
+              <a
+                href="https://devcenterpoint.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-white hover:underline"
+              >
+                DevCenterPoint
+              </a>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -314,6 +327,19 @@ export const LoginForm: React.FC = () => {
                 </form>
               </div>
             )}
+
+            {/* DevCenterPoint Attribution */}
+            <div className="mt-8 pb-4 text-center">
+              <a
+                href="https://devcenterpoint.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              >
+                <span>Platform Developed & Powered by</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300">DevCenterPoint</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ class QueueItemResource extends JsonResource
         return [
             'id'               => $this->id,
             'serial_no'        => $this->serial_no,
+            'queue_order'      => $this->queue_order ?? $this->serial_no,
             'appointment_type' => $this->appointment_type,
             'status'           => $this->status,
             'priority'         => $this->priority,

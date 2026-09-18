@@ -8,8 +8,11 @@ interface NextQueueGridProps {
 }
 
 export const NextQueueGrid: React.FC<NextQueueGridProps> = React.memo(({ items }) => {
-  // Max 5 upcoming patients
-  const upcoming = items.filter((i) => i.status === 'Waiting').slice(0, 5);
+  // Max 5 upcoming patients sorted by queue_order
+  const upcoming = items
+    .filter((i) => i.status === 'Waiting')
+    .sort((a, b) => (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no))
+    .slice(0, 5);
 
   return (
     <div

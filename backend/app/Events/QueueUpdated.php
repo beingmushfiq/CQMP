@@ -39,6 +39,7 @@ class QueueUpdated implements ShouldBroadcast
             'queue_item' => [
                 'id'             => $this->queueItem->id,
                 'serial_no'      => $this->queueItem->serial_no,
+                'queue_order'    => $this->queueItem->queue_order ?? $this->queueItem->serial_no,
                 'status'         => $this->queueItem->status,
                 'priority'       => $this->queueItem->priority,
                 'estimated_wait' => $this->queueItem->estimated_wait,

@@ -81,13 +81,13 @@ define(['./workbox-b6ffa576'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.1e3mbus02fg"
+    "revision": "0.tnh0rao9kk8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
-  workbox.registerRoute(/^https:\/\/api\.ferozamedicinecorner\.com\/api\/v1.*/i, new workbox.NetworkOnly({
+  workbox.registerRoute(/^http:\/\/localhost:8000\/api\/v1.*/i, new workbox.NetworkOnly({
     plugins: [new workbox.BackgroundSyncPlugin("cqmp-api-queue", {
       maxRetentionTime: 1440
     })]

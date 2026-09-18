@@ -50,7 +50,13 @@ class QueueController extends Controller
                 'opened_at' => $queueDay->opened_at?->toIso8601String(),
             ],
             'items' => QueueItemResource::collection(
-                $queueDay->items()->with('patient')->orderBy('serial_no')->get()
+                $queueDay->items()
+                    ->with('patient')
+                    ->orderByRaw("CASE WHEN status = 'Called' THEN 0 WHEN status = 'Waiting' THEN 1 ELSE 2 END")
+                    ->orderByRaw("CASE WHEN priority = 'Emergency' THEN 0 WHEN priority = 'Reserved' THEN 1 ELSE 2 END")
+                    ->orderBy('queue_order', 'asc')
+                    ->orderBy('serial_no', 'asc')
+                    ->get()
             ),
         ]);
     }
@@ -117,6 +123,44 @@ class QueueController extends Controller
         }
 
         $this->audit->log('queue.called_next', targetPatientId: $item->patient_id, request: $request);
+        return response()->json(['queue_item' => new QueueItemResource($item)]);
+    }
+
+    /**
+     * POST /api/v1/queue/call
+     * Call any specific patient from the queue.
+     */
+    public function call(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'queue_item_id'   => ['required', 'exists:queue_items,id'],
+            'previous_action' => ['nullable', 'string', 'in:waiting,complete,skip'],
+        ]);
+
+        $item = QueueItem::findOrFail($data['queue_item_id']);
+        $item = $this->queue->callItem($item, $data['previous_action'] ?? 'waiting');
+        $this->audit->log('queue.called', targetPatientId: $item->patient_id,
+            details: "Called serial #{$item->serial_no}", request: $request);
+
+        return response()->json(['queue_item' => new QueueItemResource($item)]);
+    }
+
+    /**
+     * POST /api/v1/queue/update-serial
+     * Position / update custom serial number for an item.
+     */
+    public function updateSerial(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'queue_item_id' => ['required', 'exists:queue_items,id'],
+            'serial_no'     => ['required', 'integer', 'min:1'],
+        ]);
+
+        $item = QueueItem::findOrFail($data['queue_item_id']);
+        $item = $this->queue->updateSerial($item, $data['serial_no']);
+        $this->audit->log('queue.serial_updated', targetPatientId: $item->patient_id,
+            details: "New serial: #{$data['serial_no']}", request: $request);
+
         return response()->json(['queue_item' => new QueueItemResource($item)]);
     }
 
@@ -321,11 +365,15 @@ class QueueController extends Controller
         $items = $queueDay->items()
             ->with('patient:id,name')
             ->whereIn('status', ['Waiting', 'Called'])
-            ->orderBy('serial_no')
+            ->orderByRaw("CASE WHEN status = 'Called' THEN 0 WHEN status = 'Waiting' THEN 1 ELSE 2 END")
+            ->orderBy('priority', 'desc')
+            ->orderBy('queue_order', 'asc')
+            ->orderBy('serial_no', 'asc')
             ->get()
             ->map(fn($item) => [
                 'id'             => $item->id,
                 'serial_no'      => $item->serial_no,
+                'queue_order'    => $item->queue_order ?? $item->serial_no,
                 'status'         => $item->status,
                 'priority'       => $item->priority,
                 'estimated_wait' => $item->estimated_wait,

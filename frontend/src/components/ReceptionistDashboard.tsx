@@ -30,11 +30,11 @@ function saveSmartDefault(name: string, phone: string) {
 }
 
 export const ReceptionistDashboard: React.FC = () => {
-  const { queueDay, items, fetchTodayQueue, registerWalkIn, insertEmergency, reinsertItem, deleteItem, completeItem, skipItem, toggleQueuePause, callNext, clearQueue, closeQueue } = useQueueStore();
-  const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => a.serial_no - b.serial_no);
+  const { queueDay, items, fetchTodayQueue, registerWalkIn, insertEmergency, reinsertItem, deleteItem, completeItem, skipItem, toggleQueuePause, callNext, callItem, updateSerial, clearQueue, closeQueue } = useQueueStore();
+  const waitingItems = items.filter((i) => i.status === 'Waiting').sort((a, b) => (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no));
   const calledItem = items.find((i) => i.status === 'Called');
-  const completedItems = items.filter((i) => i.status === 'Completed').sort((a, b) => a.serial_no - b.serial_no);
-  const skippedItems = items.filter((i) => i.status === 'Skipped').sort((a, b) => a.serial_no - b.serial_no);
+  const completedItems = items.filter((i) => i.status === 'Completed').sort((a, b) => (b.completed_at ? new Date(b.completed_at).getTime() - new Date(a.completed_at || 0).getTime() : (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no)));
+  const skippedItems = items.filter((i) => i.status === 'Skipped').sort((a, b) => (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no));
   const { logout } = useAuthStore();
   const { get: getSetting } = useSettingsStore();
   const { t } = useLanguageStore();
@@ -54,6 +54,14 @@ export const ReceptionistDashboard: React.FC = () => {
   const [editingNameItemId, setEditingNameItemId] = useState<number | null>(null);
   const [editingNameValue, setEditingNameValue] = useState('');
   const editingNameInputRef = useRef<HTMLInputElement>(null);
+
+  // Inline custom serial edit state
+  const [editingSerialItemId, setEditingSerialItemId] = useState<number | null>(null);
+  const [editingSerialValue, setEditingSerialValue] = useState('');
+  const editingSerialInputRef = useRef<HTMLInputElement>(null);
+
+  // Chamber conflict modal state (when calling someone while chamber has patient)
+  const [callConflictModal, setCallConflictModal] = useState<{ targetItem: any } | null>(null);
 
   // Reorder state
   const [reorderItemId, setReorderItemId] = useState<number | null>(null);
@@ -133,12 +141,63 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  // Focus inline name edit input when it appears
+  const handleSaveSerial = async (item: any, newSerialStr: string) => {
+    const val = parseInt(newSerialStr.trim());
+    if (isNaN(val) || val < 1) {
+      setToast({ message: 'Please enter a valid serial number (1 or greater).', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    try {
+      await updateSerial(item.id, val);
+      setToast({ message: `Serial number updated to #${val}.`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ message: 'Failed to update serial number.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setEditingSerialItemId(null);
+      setEditingSerialValue('');
+    }
+  };
+
+  const handleInitiateCall = (targetItem: any) => {
+    if (calledItem && calledItem.id !== targetItem.id) {
+      setCallConflictModal({ targetItem });
+    } else {
+      performCall(targetItem.id);
+    }
+  };
+
+  const performCall = async (targetItemId: number, prevAction: 'waiting' | 'complete' | 'skip' = 'waiting') => {
+    try {
+      await callItem(targetItemId, prevAction);
+      const target = items.find(i => i.id === targetItemId);
+      if (target) {
+        speakAnnouncement(target.serial_no, true);
+        setToast({ message: `Calling patient ${target.patient.name} (#${target.serial_no})!`, type: 'success' });
+      }
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ message: 'Failed to call patient.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setCallConflictModal(null);
+    }
+  };
+
+  // Focus inline inputs when they appear
   useEffect(() => {
     if (editingNameItemId !== null) {
       setTimeout(() => editingNameInputRef.current?.focus(), 50);
     }
   }, [editingNameItemId]);
+
+  useEffect(() => {
+    if (editingSerialItemId !== null) {
+      setTimeout(() => editingSerialInputRef.current?.focus(), 50);
+    }
+  }, [editingSerialItemId]);
 
   const speakAnnouncement = (serialNo: number, force = false) => {
     if (!isAudioEnabled && !force) return;
@@ -226,7 +285,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </style>
         </head>
         <body>
-          <div class="title font-bold">Metro Health Care</div>
+          <div class="title font-bold">${getSetting('site_title', 'Clinic Queue System')}</div>
           <div class="divider"></div>
           <div>চিকিৎসক / Doctor:</div>
           <div style="font-weight: bold;">${docName}</div>
@@ -238,6 +297,7 @@ export const ReceptionistDashboard: React.FC = () => {
           <div style="font-weight: bold;">~${item.estimated_wait} Mins</div>
           <div class="divider"></div>
           <div style="font-size: 10px;">অপেক্ষা করার জন্য ধন্যবাদ। / Thank you.</div>
+          <div style="font-size: 8px; color: #666; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase;">POWERED BY DEVCENTERPOINT</div>
           <script>
             window.onload = function() {
               window.print();
@@ -350,7 +410,7 @@ export const ReceptionistDashboard: React.FC = () => {
     }
   };
 
-  // ── Reorder: inline UI instead of prompt() ──
+  // ── Reorder / Reinsert handler ──
   const startReorder = useCallback((itemId: number) => {
     setReorderItemId(itemId);
     setReorderPosition('');
@@ -361,32 +421,31 @@ export const ReceptionistDashboard: React.FC = () => {
     setReorderPosition('');
   }, []);
 
+  const executeReorder = useCallback(async (itemId: number, pos: number, labelDescription?: string) => {
+    const reorderedItem = items.find(i => i.id === itemId);
+    const itemLabel = reorderedItem ? `${reorderedItem.patient.name} (#${reorderedItem.serial_no})` : 'Patient';
+    try {
+      await reinsertItem(itemId, pos);
+      const desc = labelDescription || (pos === 1 ? 'the front of the queue (next in line)' : `queue position #${pos}`);
+      setToast({ message: `Moved ${itemLabel} to ${desc}.`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ message: 'Failed to reorder. Please try again.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    }
+    cancelReorder();
+  }, [items, reinsertItem, cancelReorder]);
+
   const confirmReorder = useCallback(async () => {
     if (reorderItemId === null || reorderPosition === '') return;
-    const afterSerial = parseInt(reorderPosition);
-    if (isNaN(afterSerial) || afterSerial < 0) {
-      setToast({ message: 'Please enter 0 (front) or a valid serial number.', type: 'error' });
+    const pos = parseInt(reorderPosition);
+    if (isNaN(pos) || pos < 1) {
+      setToast({ message: 'Please enter a valid queue position (1 or greater).', type: 'error' });
       setTimeout(() => setToast(null), 3000);
       return;
     }
-    const targetPosition = afterSerial + 1;
-    setConfirmModal({
-      message: afterSerial === 0
-        ? `Reinsert this patient at the front of the queue?`
-        : `Reinsert this patient after serial #${afterSerial}?`,
-      onConfirm: async () => {
-        try {
-          await reinsertItem(reorderItemId, targetPosition);
-          setToast({ message: afterSerial === 0 ? 'Patient moved to front.' : `Patient inserted after serial #${afterSerial}.`, type: 'success' });
-          setTimeout(() => setToast(null), 3000);
-        } catch {
-          setToast({ message: 'Failed to reorder. Please try again.', type: 'error' });
-          setTimeout(() => setToast(null), 3000);
-        }
-        cancelReorder();
-      },
-    });
-  }, [reorderItemId, reorderPosition, reinsertItem, cancelReorder]);
+    await executeReorder(reorderItemId, pos);
+  }, [reorderItemId, reorderPosition, executeReorder]);
 
   const handleDelete = async (itemId: number, serialNo: number) => {
     setConfirmModal({
@@ -846,7 +905,48 @@ export const ReceptionistDashboard: React.FC = () => {
                       <div className="flex justify-between items-center">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-indigo-600 dark:text-indigo-400">#{item.serial_no}</span>
+                            {editingSerialItemId === item.id ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs font-bold text-indigo-500">#</span>
+                                <input
+                                  ref={editingSerialInputRef}
+                                  type="number"
+                                  min={1}
+                                  value={editingSerialValue}
+                                  onChange={(e) => setEditingSerialValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveSerial(item, editingSerialValue);
+                                    if (e.key === 'Escape') { setEditingSerialItemId(null); setEditingSerialValue(''); }
+                                  }}
+                                  className="w-16 bg-white dark:bg-slate-800 border border-indigo-500 rounded px-1.5 py-0.5 text-xs text-slate-900 dark:text-white focus:outline-none"
+                                />
+                                <button
+                                  onClick={() => handleSaveSerial(item, editingSerialValue)}
+                                  className="p-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer"
+                                  title="Save Serial"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => { setEditingSerialItemId(null); setEditingSerialValue(''); }}
+                                  className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 cursor-pointer"
+                                  title="Cancel"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 group/serial">
+                                <span className="font-bold text-sm text-indigo-600 dark:text-indigo-400">#{item.serial_no}</span>
+                                <button
+                                  onClick={() => { setEditingSerialItemId(item.id); setEditingSerialValue(String(item.serial_no)); }}
+                                  className="opacity-0 group-hover/serial:opacity-100 p-0.5 rounded text-slate-400 hover:text-indigo-500 cursor-pointer transition-all"
+                                  title="Position Custom Serial #"
+                                >
+                                  <Pencil className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            )}
                             {editingNameItemId === item.id ? (
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <input
@@ -897,6 +997,14 @@ export const ReceptionistDashboard: React.FC = () => {
                         </div>
                         <div className="flex gap-1.5">
                           <button
+                            onClick={() => handleInitiateCall(item)}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded-lg cursor-pointer transition-all shadow-sm flex items-center gap-1 text-[10px] font-bold"
+                            title={`Call #${item.serial_no} ${item.patient.name} into chamber now`}
+                          >
+                            <PhoneCall className="w-3 h-3" />
+                            <span>Call</span>
+                          </button>
+                          <button
                             onClick={() => completeItem(item.id)}
                             className="bg-emerald-500/10 hover:bg-emerald-500/20 p-1.5 rounded-lg text-emerald-500 dark:text-emerald-400 cursor-pointer transition-all"
                             title="Mark as Completed"
@@ -920,7 +1028,7 @@ export const ReceptionistDashboard: React.FC = () => {
                           <button
                             onClick={() => startReorder(item.id)}
                             className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 cursor-pointer transition-all"
-                            title="Reorder position"
+                            title="Reorder queue position"
                           >
                             <ArrowDownUp className="w-3.5 h-3.5" />
                           </button>
@@ -939,36 +1047,73 @@ export const ReceptionistDashboard: React.FC = () => {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-700/80"
+                          className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-700/80 space-y-2"
                         >
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Move to position:</span>
-                            <input
-                              ref={reorderInputRef}
-                              type="number"
-                              min={1}
-                              value={reorderPosition}
-                              onChange={(e) => setReorderPosition(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') confirmReorder();
-                                if (e.key === 'Escape') cancelReorder();
-                              }}
-                              className="w-20 bg-white dark:bg-slate-800 border border-indigo-500 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-                              placeholder="#"
-                            />
-                            <button
-                              onClick={confirmReorder}
-                              disabled={!reorderPosition}
-                              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-3 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
-                            >
-                              Move
-                            </button>
+                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                            <span>{t('reception.move.to')}</span>
                             <button
                               onClick={cancelReorder}
-                              className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 cursor-pointer transition-all"
+                              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer"
+                              title={t('reception.cancel')}
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => executeReorder(item.id, 1, 'the front of the queue (next in line)')}
+                              className="py-1 px-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 border border-indigo-200 dark:border-indigo-700/60 rounded-lg text-[10px] font-bold text-indigo-700 dark:text-indigo-300 transition-all cursor-pointer shadow-xs active:scale-95"
+                              title="Move to position #1"
+                            >
+                              ⚡ {t('reception.reinsert.next')}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const targetPos = Math.min(3, waitingItems.length);
+                                executeReorder(item.id, targetPos, `position #${targetPos}`);
+                              }}
+                              className="py-1 px-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 border border-indigo-200 dark:border-indigo-700/60 rounded-lg text-[10px] font-bold text-indigo-700 dark:text-indigo-300 transition-all cursor-pointer shadow-xs active:scale-95"
+                              title="Move after 2 patients"
+                            >
+                              ⏱️ {t('reception.reinsert.after2')}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => executeReorder(item.id, waitingItems.length, 'the end of the queue')}
+                              className="py-1 px-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 border border-indigo-200 dark:border-indigo-700/60 rounded-lg text-[10px] font-bold text-indigo-700 dark:text-indigo-300 transition-all cursor-pointer shadow-xs active:scale-95"
+                              title="Move to the back of the waiting line"
+                            >
+                              🔻 {t('reception.reinsert.end')}
+                            </button>
+
+                            <div className="flex items-center gap-1 ml-auto">
+                              <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400">{t('reception.reinsert.custom')}:</span>
+                              <input
+                                ref={reorderInputRef}
+                                type="number"
+                                min={1}
+                                value={reorderPosition}
+                                onChange={(e) => setReorderPosition(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') confirmReorder();
+                                  if (e.key === 'Escape') cancelReorder();
+                                }}
+                                className="w-14 bg-white dark:bg-slate-800 border border-indigo-500 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                                placeholder="#"
+                              />
+                              <button
+                                onClick={confirmReorder}
+                                disabled={!reorderPosition}
+                                className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all"
+                              >
+                                {t('reception.move')}
+                              </button>
+                            </div>
                           </div>
                         </motion.div>
                       )}
@@ -1006,26 +1151,86 @@ export const ReceptionistDashboard: React.FC = () => {
                     <div key={item.id}>
                       <div className="bg-slate-50 dark:bg-slate-800/30 p-2 rounded-lg border border-slate-200 dark:border-slate-700 flex justify-between items-center text-xs">
                         <span className="text-slate-700 dark:text-slate-300">{item.patient.name} (#{item.serial_no})</span>
-                        {reorderItemId === item.id ? (
+                        <div className="flex items-center gap-2">
                           <button
-                            onClick={cancelReorder}
-                            className="text-red-500 dark:text-red-400 hover:text-red-600 text-[10px] font-bold cursor-pointer"
+                            onClick={() => handleInitiateCall(item)}
+                            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 text-[10px] font-bold cursor-pointer flex items-center gap-0.5"
+                            title="Call this patient into chamber immediately"
                           >
-                            Cancel
+                            <PhoneCall className="w-3 h-3" /> Call
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => startReorder(item.id)}
-                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 text-[10px] font-bold cursor-pointer"
-                          >
-                            Reinsert
-                          </button>
-                        )}
+                          {reorderItemId === item.id ? (
+                            <button
+                              onClick={cancelReorder}
+                              className="text-red-500 dark:text-red-400 hover:text-red-600 text-[10px] font-bold cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => startReorder(item.id)}
+                              className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 text-[10px] font-bold cursor-pointer"
+                            >
+                              Reinsert
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {reorderItemId === item.id && (
-                        <div className="mt-2 p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg border border-indigo-200 dark:border-indigo-800/50">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Position:</span>
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-2 p-2.5 bg-indigo-50/90 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800/50 space-y-2 shadow-xs"
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-bold text-indigo-900 dark:text-indigo-300">
+                            <span>Reinsert where in queue?</span>
+                            <button
+                              onClick={cancelReorder}
+                              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer"
+                              title={t('reception.cancel')}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => executeReorder(item.id, 1, 'the front of the queue (next in line)')}
+                              className="py-1 px-1.5 bg-white dark:bg-slate-800 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 border border-indigo-200 dark:border-indigo-700/60 rounded-lg text-[10px] font-bold text-indigo-700 dark:text-indigo-300 transition-all text-center cursor-pointer shadow-xs active:scale-95"
+                              title="Reinsert at Position #1 (Next in line)"
+                            >
+                              ⚡ {t('reception.reinsert.next')}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const targetPos = Math.min(3, waitingItems.length + 1);
+                                executeReorder(item.id, targetPos, `position #${targetPos} (after 2 patients)`);
+                              }}
+                              className="py-1 px-1.5 bg-white dark:bg-slate-800 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 border border-indigo-200 dark:border-indigo-700/60 rounded-lg text-[10px] font-bold text-indigo-700 dark:text-indigo-300 transition-all text-center cursor-pointer shadow-xs active:scale-95"
+                              title="Reinsert after 2 patients"
+                            >
+                              ⏱️ {t('reception.reinsert.after2')}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const targetPos = waitingItems.length + 1;
+                                executeReorder(item.id, targetPos, 'the end of the queue');
+                              }}
+                              className="py-1 px-1.5 bg-white dark:bg-slate-800 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 border border-indigo-200 dark:border-indigo-700/60 rounded-lg text-[10px] font-bold text-indigo-700 dark:text-indigo-300 transition-all text-center cursor-pointer shadow-xs active:scale-95"
+                              title="Reinsert at the back of the line"
+                            >
+                              🔻 {t('reception.reinsert.end')}
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-indigo-100 dark:border-indigo-900/50">
+                            <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400">{t('reception.reinsert.custom')}:</span>
                             <input
                               ref={reorderInputRef}
                               type="number"
@@ -1036,18 +1241,19 @@ export const ReceptionistDashboard: React.FC = () => {
                                 if (e.key === 'Enter') confirmReorder();
                                 if (e.key === 'Escape') cancelReorder();
                               }}
-                              className="w-16 bg-white dark:bg-slate-800 border border-indigo-500 rounded-lg px-2 py-1 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
-                              placeholder="#"
+                              className="w-14 bg-white dark:bg-slate-800 border border-indigo-300 dark:border-indigo-700 rounded px-1.5 py-0.5 text-[10px] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              placeholder="1=front"
                             />
                             <button
+                              type="button"
                               onClick={confirmReorder}
                               disabled={!reorderPosition}
-                              className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-[10px] font-bold rounded-lg cursor-pointer"
+                              className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-[10px] font-bold rounded cursor-pointer transition-all"
                             >
-                              Move
+                              {t('reception.move')}
                             </button>
                           </div>
-                        </div>
+                        </motion.div>
                       )}
                     </div>
                   ))}
@@ -1123,6 +1329,91 @@ export const ReceptionistDashboard: React.FC = () => {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Call Conflict Modal (when someone is already in chamber) */}
+      <AnimatePresence>
+        {callConflictModal && calledItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setCallConflictModal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white dark:bg-surface-card border border-slate-200 dark:border-slate-700 rounded-2xl shadow-premium-2xl p-6 w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-white">Patient Already in Chamber</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{calledItem.patient.name}</span> (#{calledItem.serial_no}) is currently in consultation.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-brand-50/60 dark:bg-brand-950/30 border border-brand-200/60 dark:border-brand-800/40 rounded-xl mb-5 text-xs text-brand-800 dark:text-brand-300">
+                You are about to call <span className="font-bold">{callConflictModal.targetItem.patient.name}</span> (Serial #{callConflictModal.targetItem.serial_no}). Please select what to do with <span className="font-bold">{calledItem.patient.name}</span>:
+              </div>
+
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => performCall(callConflictModal.targetItem.id, 'waiting')}
+                  className="w-full py-2.5 px-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-700/50 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    Return {calledItem.patient.name} back to Waiting queue
+                  </span>
+                  <span className="text-[11px] opacity-75">Keep turn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => performCall(callConflictModal.targetItem.id, 'complete')}
+                  className="w-full py-2.5 px-4 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Mark {calledItem.patient.name} as Completed
+                  </span>
+                  <span className="text-[11px] opacity-75">Done</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => performCall(callConflictModal.targetItem.id, 'skip')}
+                  className="w-full py-2.5 px-4 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-700/50 text-amber-700 dark:text-amber-300 text-xs font-semibold rounded-xl flex items-center justify-between transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    Mark {calledItem.patient.name} as Skipped
+                  </span>
+                  <span className="text-[11px] opacity-75">Absent</span>
+                </button>
+              </div>
+
+              <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setCallConflictModal(null)}
+                  className="px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 

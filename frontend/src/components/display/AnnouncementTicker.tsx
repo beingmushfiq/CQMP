@@ -42,6 +42,19 @@ export const AnnouncementTicker: React.FC<AnnouncementTickerProps> = React.memo(
           </span>
         </div>
       </div>
+
+      {/* DevCenterPoint Attribution Badge */}
+      <a
+        href="https://devcenterpoint.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 flex items-center bg-slate-800/90 hover:bg-slate-800 border border-slate-700/70 hover:border-indigo-500/50 rounded-xl text-slate-400 font-semibold tracking-wide shadow-sm transition-colors cursor-pointer"
+        style={{ padding: '0.4cqh 0.8cqw', gap: '0.4cqw', fontSize: 'clamp(7px, 0.75cqw, 12px)' }}
+        title="DevCenterPoint - Healthcare & Queue Systems"
+      >
+        <span className="text-slate-500 font-normal">Powered by</span>
+        <span className="text-indigo-400 font-bold">DevCenterPoint</span>
+      </a>
     </div>
   );
 });

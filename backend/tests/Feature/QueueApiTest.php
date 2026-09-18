@@ -193,7 +193,7 @@ class QueueApiTest extends TestCase
                      ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p2->id])
                      ->json('data');
 
-        // Let's reinsert item 2 at position 1
+        // Let's reinsert item 2 at position 1 (front of waiting line)
         $response = $this->actingAsJwt($this->admin)
                          ->postJson('/api/v1/queue/reinsert', [
                              'queue_item_id' => $item2['id'],
@@ -201,8 +201,12 @@ class QueueApiTest extends TestCase
                          ]);
 
         $response->assertOk();
-        $this->assertEquals(1, \App\Models\QueueItem::find($item2['id'])->serial_no);
-        $this->assertEquals(2, \App\Models\QueueItem::find($item1['id'])->serial_no);
+        // Crucial requirement: original serial numbers MUST NOT change!
+        $this->assertEquals(2, \App\Models\QueueItem::find($item2['id'])->serial_no);
+        $this->assertEquals(1, \App\Models\QueueItem::find($item1['id'])->serial_no);
+        // But queue_order must position item2 ahead of item1
+        $this->assertEquals(1, \App\Models\QueueItem::find($item2['id'])->queue_order);
+        $this->assertEquals(2, \App\Models\QueueItem::find($item1['id'])->queue_order);
     }
 
     public function test_can_complete_queue_item(): void
@@ -329,6 +333,71 @@ class QueueApiTest extends TestCase
 
         $response->assertOk();
         $this->assertDatabaseMissing('queue_items', ['id' => $item['id']]);
+    }
+
+    public function test_can_call_specific_patient(): void
+    {
+        $clinic   = Clinic::factory()->create();
+        $doctor   = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+        $queueDay = QueueDay::factory()->create([
+            'clinic_id' => $clinic->id,
+            'doctor_id' => $doctor->id,
+            'date'      => Carbon::today()->toDateString(),
+            'status'    => 'opened',
+        ]);
+        $p1 = Patient::factory()->create();
+        $p2 = Patient::factory()->create();
+
+        $item1 = $this->actingAsJwt($this->admin)
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p1->id])
+                     ->json('data');
+
+        $item2 = $this->actingAsJwt($this->admin)
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p2->id])
+                     ->json('data');
+
+        // Call item 2 directly (even though item 1 was first in line)
+        $response = $this->actingAsJwt($this->admin)
+                         ->postJson('/api/v1/queue/call', [
+                             'queue_item_id' => $item2['id'],
+                         ]);
+
+        $response->assertOk();
+        $this->assertEquals('Called', \App\Models\QueueItem::find($item2['id'])->status);
+        $this->assertEquals('Waiting', \App\Models\QueueItem::find($item1['id'])->status);
+    }
+
+    public function test_can_update_custom_serial_without_mutating_others(): void
+    {
+        $clinic   = Clinic::factory()->create();
+        $doctor   = Doctor::factory()->create(['clinic_id' => $clinic->id]);
+        $queueDay = QueueDay::factory()->create([
+            'clinic_id' => $clinic->id,
+            'doctor_id' => $doctor->id,
+            'date'      => Carbon::today()->toDateString(),
+            'status'    => 'opened',
+        ]);
+        $p1 = Patient::factory()->create();
+        $p2 = Patient::factory()->create();
+
+        $item1 = $this->actingAsJwt($this->admin)
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p1->id])
+                     ->json('data');
+
+        $item2 = $this->actingAsJwt($this->admin)
+                     ->postJson('/api/v1/queue/create', ['queue_day_id' => $queueDay->id, 'patient_id' => $p2->id])
+                     ->json('data');
+
+        // Position custom serial 99 for item 2
+        $response = $this->actingAsJwt($this->admin)
+                         ->postJson('/api/v1/queue/update-serial', [
+                             'queue_item_id' => $item2['id'],
+                             'serial_no'     => 99,
+                         ]);
+
+        $response->assertOk();
+        $this->assertEquals(99, \App\Models\QueueItem::find($item2['id'])->serial_no);
+        $this->assertEquals(1, \App\Models\QueueItem::find($item1['id'])->serial_no); // Item 1 is completely untouched!
     }
 }
 

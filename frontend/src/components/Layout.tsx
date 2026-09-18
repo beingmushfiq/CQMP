@@ -201,6 +201,35 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
               <><ChevronLeft className="w-4 h-4" /><span>Collapse</span></>
             )}
           </button>
+
+          {/* DevCenterPoint Branding */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/60">
+            {sidebarCollapsed ? (
+              <a
+                href="https://devcenterpoint.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Powered by DevCenterPoint"
+                className="flex justify-center py-1 group"
+              >
+                <span className="text-[9px] font-black tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-800/40 group-hover:scale-105 transition-transform">
+                  DCP
+                </span>
+              </a>
+            ) : (
+              <a
+                href="https://devcenterpoint.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between px-2 py-1 rounded-lg text-[10px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group"
+              >
+                <span className="text-slate-400">Powered by</span>
+                <span className="font-bold text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                  DevCenterPoint
+                </span>
+              </a>
+            )}
+          </div>
         </div>
       </aside>
 
@@ -280,8 +309,23 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
         </header>
 
         {/* Page Content */}
-        <main className={`flex-1 min-h-0 ${activeTab === 'tv' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4 md:p-6 pb-20 md:pb-6'}`}>
-          {children}
+        <main className={`flex-1 min-h-0 flex flex-col ${activeTab === 'tv' ? 'overflow-hidden p-0' : 'overflow-y-auto p-4 md:p-6 pb-20 md:pb-6'}`}>
+          <div className="flex-1">
+            {children}
+          </div>
+          {activeTab !== 'tv' && (
+            <footer className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/80 text-center text-xs text-slate-400 dark:text-slate-500">
+              <span>{siteTitle} • Powered & Maintained by </span>
+              <a
+                href="https://devcenterpoint.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                DevCenterPoint
+              </a>
+            </footer>
+          )}
         </main>
       </div>
 
@@ -325,6 +369,16 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children
               >
                 <LogOut className="w-4 h-4" />
               </button>
+            </div>
+            <div className="p-2.5 text-center border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <a
+                href="https://devcenterpoint.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+              >
+                Powered by <span className="font-bold text-indigo-600 dark:text-indigo-400">DevCenterPoint</span>
+              </a>
             </div>
           </div>
         </div>

@@ -37,9 +37,10 @@ class EmergencyInserted implements ShouldBroadcast
     {
         return [
             'queue_item' => [
-                'id'        => $this->queueItem->id,
-                'serial_no' => $this->queueItem->serial_no,
-                'priority'  => $this->queueItem->priority,
+                'id'          => $this->queueItem->id,
+                'serial_no'   => $this->queueItem->serial_no,
+                'queue_order' => $this->queueItem->queue_order ?? $this->queueItem->serial_no,
+                'priority'    => $this->queueItem->priority,
                 'status'    => $this->queueItem->status,
                 'patient'   => $this->queueItem->patient ? [
                     'id'    => $this->queueItem->patient->id,

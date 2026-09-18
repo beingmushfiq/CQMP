@@ -130,7 +130,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
           const qItems = parseItems(res);
           queues[doc.id] = {
             called: qItems.find((i: any) => i.status === 'Called') || null,
-            waiting: qItems.filter((i: any) => i.status === 'Waiting').slice(0, 3),
+            waiting: qItems.filter((i: any) => i.status === 'Waiting').sort((a: any, b: any) => (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no)).slice(0, 3),
           };
 
           // Only subscribe via WebSocket when authenticated
@@ -186,7 +186,7 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
         const qItems = parseItems(res);
         queues[doc.id] = {
           called: qItems.find((i: any) => i.status === 'Called') || null,
-          waiting: qItems.filter((i: any) => i.status === 'Waiting').slice(0, 3),
+          waiting: qItems.filter((i: any) => i.status === 'Waiting').sort((a: any, b: any) => (a.queue_order ?? a.serial_no) - (b.queue_order ?? b.serial_no)).slice(0, 3),
         };
       } catch { /* ignore */ }
     }
@@ -477,10 +477,15 @@ export const TvDisplay: React.FC<TvDisplayProps> = ({ embedded = false }) => {
           })}
         </div>
 
-        <div className="bg-slate-100 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-2 md:p-3 rounded-xl flex items-center overflow-hidden">
-          <span className="bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 text-[10px] font-bold uppercase tracking-wider px-1.5 md:px-2 py-0.5 rounded-md mr-2 md:mr-3 shrink-0">{t('footer.notice')}</span>
-          <div className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap animate-pulse">
-            Bilingual audio announcements are synthesized dynamically. Please wait.
+        <div className="bg-slate-100 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 p-2 md:p-3 rounded-xl flex items-center justify-between overflow-hidden">
+          <div className="flex items-center overflow-hidden">
+            <span className="bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 text-[10px] font-bold uppercase tracking-wider px-1.5 md:px-2 py-0.5 rounded-md mr-2 md:mr-3 shrink-0">{t('footer.notice')}</span>
+            <div className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap animate-pulse">
+              Bilingual audio announcements are synthesized dynamically. Please wait.
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 font-medium ml-4 hidden sm:block">
+            Powered by <a href="https://devcenterpoint.com" target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-500 hover:underline">DevCenterPoint</a>
           </div>
         </div>
 

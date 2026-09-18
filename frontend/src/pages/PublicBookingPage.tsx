@@ -416,6 +416,21 @@ export const PublicBookingPage: React.FC = () => {
             </form>
           </div>
         )}
+
+        {/* DevCenterPoint Attribution Footer */}
+        <div className="text-center pt-2 pb-2">
+          <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+            Powered by{' '}
+            <a
+              href="https://devcenterpoint.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
+              DevCenterPoint
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

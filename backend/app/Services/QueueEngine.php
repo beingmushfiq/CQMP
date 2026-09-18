@@ -66,14 +66,13 @@ class QueueEngine
 
             if ($customSerial !== null) {
                 $nextSerial = $customSerial;
-                // Bump all items at or after customSerial to accommodate the insertion
-                QueueItem::where('queue_day_id', $queueDay->id)
-                    ->where('serial_no', '>=', $customSerial)
-                    ->lockForUpdate()
-                    ->increment('serial_no');
+                // Positioned Custom Serial Number: do NOT bump existing patients' serial numbers
             } else {
-                $nextSerial = QueueItem::where('queue_day_id', $queueDay->id)->max('serial_no') + 1;
+                $nextSerial = (QueueItem::where('queue_day_id', $queueDay->id)->max('serial_no') ?? 0) + 1;
             }
+
+            $maxOrder = QueueItem::where('queue_day_id', $queueDay->id)->max('queue_order') ?? 0;
+            $nextOrder = $maxOrder + 1;
 
             $waitingCount = QueueItem::where('queue_day_id', $queueDay->id)
                 ->where('status', 'Waiting')
@@ -85,6 +84,7 @@ class QueueEngine
                 'queue_day_id'     => $queueDay->id,
                 'patient_id'       => $patient->id,
                 'serial_no'        => $nextSerial,
+                'queue_order'      => $nextOrder,
                 'appointment_type' => 'Walk-in',
                 'status'           => 'Waiting',
                 'priority'         => $priority,
@@ -107,19 +107,31 @@ class QueueEngine
     public function callNext(QueueDay $queueDay): ?QueueItem
     {
         return DB::transaction(function () use ($queueDay) {
-            // Mark currently called item as "Inside Chamber" (intermediate) if needed
-            // For simplicity: move any currently Called item to waiting (will be handled by receptionist "complete")
-
             /** @var QueueItem|null $nextItem */
             $nextItem = QueueItem::where('queue_day_id', $queueDay->id)
                 ->where('status', 'Waiting')
-                ->orderBy('priority', 'desc') // Emergency > Normal
-                ->orderBy('serial_no')
+                ->orderByRaw("CASE WHEN priority = 'Emergency' THEN 0 WHEN priority = 'Reserved' THEN 1 ELSE 2 END")
+                ->orderBy('queue_order', 'asc')
+                ->orderBy('serial_no', 'asc')
                 ->lockForUpdate()
                 ->first();
 
             if (! $nextItem) {
                 return null;
+            }
+
+            // Move any currently Called item back to waiting so only one patient is inside chamber
+            $currentlyCalled = QueueItem::where('queue_day_id', $queueDay->id)
+                ->where('status', 'Called')
+                ->where('id', '!=', $nextItem->id)
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($currentlyCalled as $prev) {
+                $prev->update(['status' => 'Waiting']);
+                $prev->load(['patient', 'queueDay']);
+                rescue(fn() => broadcast(new QueueUpdated($prev)), report: false);
+                NodeBroadcaster::broadcast('queue-updated', $prev);
             }
 
             $nextItem->update([
@@ -133,7 +145,75 @@ class QueueEngine
             }, report: false);
             NodeBroadcaster::broadcast('queue-updated', $nextItem);
 
+            $this->recalculateWaitTimes($queueDay);
+
             return $nextItem;
+        });
+    }
+
+    /**
+     * Call a specific patient directly from the queue.
+     */
+    public function callItem(QueueItem $item, string $previousAction = 'waiting'): QueueItem
+    {
+        return DB::transaction(function () use ($item, $previousAction) {
+            $item = QueueItem::lockForUpdate()->find($item->id);
+
+            // Handle any patient currently "Called" in this queue day
+            $currentlyCalled = QueueItem::where('queue_day_id', $item->queue_day_id)
+                ->where('status', 'Called')
+                ->where('id', '!=', $item->id)
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($currentlyCalled as $prev) {
+                if ($previousAction === 'complete') {
+                    $prev->update(['status' => 'Completed', 'completed_at' => Carbon::now()]);
+                    rescue(fn() => broadcast(new QueueCompleted($prev)), report: false);
+                } elseif ($previousAction === 'skip') {
+                    $prev->update(['status' => 'Skipped']);
+                    rescue(fn() => broadcast(new QueueUpdated($prev)), report: false);
+                } else {
+                    $prev->update(['status' => 'Waiting']);
+                    rescue(fn() => broadcast(new QueueUpdated($prev)), report: false);
+                }
+                $prev->load(['patient', 'queueDay']);
+                NodeBroadcaster::broadcast('queue-updated', $prev);
+            }
+
+            $item->update([
+                'status'    => 'Called',
+                'called_at' => Carbon::now(),
+            ]);
+
+            $item->load(['patient', 'queueDay']);
+            rescue(function () use ($item) {
+                broadcast(new QueueUpdated($item));
+            }, report: false);
+            NodeBroadcaster::broadcast('queue-updated', $item);
+
+            $this->recalculateWaitTimes($item->queueDay);
+
+            return $item;
+        });
+    }
+
+    /**
+     * Explicitly update / position a custom serial number for a queue item.
+     */
+    public function updateSerial(QueueItem $item, int $newSerial): QueueItem
+    {
+        return DB::transaction(function () use ($item, $newSerial) {
+            $item = QueueItem::lockForUpdate()->find($item->id);
+            $item->update(['serial_no' => $newSerial]);
+            $item->load(['patient', 'queueDay']);
+
+            rescue(function () use ($item) {
+                broadcast(new QueueUpdated($item));
+            }, report: false);
+            NodeBroadcaster::broadcast('queue-updated', $item);
+
+            return $item;
         });
     }
 
@@ -176,22 +256,44 @@ class QueueEngine
     }
 
     /**
-     * Reinsert a skipped patient at a given position.
+     * Reinsert a patient at a given position in the queue line.
+     * The patient's serial_no and other patients' serial_no REMAIN UNCHANGED.
+     * Only queue_order is reorganized.
      */
     public function reinsert(QueueItem $item, int $position): QueueItem
     {
         return DB::transaction(function () use ($item, $position) {
-            // Bump all items at or after target position
-            QueueItem::where('queue_day_id', $item->queue_day_id)
+            // Retrieve all other waiting items in current queue line order
+            $waiting = QueueItem::where('queue_day_id', $item->queue_day_id)
                 ->where('status', 'Waiting')
-                ->where('serial_no', '>=', $position)
+                ->where('id', '!=', $item->id)
+                ->orderByRaw("CASE WHEN priority = 'Emergency' THEN 0 WHEN priority = 'Reserved' THEN 1 ELSE 2 END")
+                ->orderBy('queue_order', 'asc')
+                ->orderBy('serial_no', 'asc')
                 ->lockForUpdate()
-                ->increment('serial_no');
+                ->get();
 
-            $item->update([
-                'status'    => 'Waiting',
-                'serial_no' => $position,
-            ]);
+            // $position is 1-indexed. Insert at index $position - 1
+            $targetIndex = max(0, min($position - 1, $waiting->count()));
+
+            $orderedList = $waiting->slice(0, $targetIndex)
+                ->concat([$item])
+                ->concat($waiting->slice($targetIndex));
+
+            $order = 1;
+            foreach ($orderedList as $orderedItem) {
+                if ($orderedItem->id === $item->id) {
+                    $orderedItem->update([
+                        'status'      => 'Waiting',
+                        'queue_order' => $order,
+                    ]);
+                } else {
+                    if ($orderedItem->queue_order !== $order) {
+                        $orderedItem->update(['queue_order' => $order]);
+                    }
+                }
+                $order++;
+            }
 
             // Broadcast updates for all affected waiting/called items in this queue day
             $allItems = QueueItem::where('queue_day_id', $item->queue_day_id)
@@ -203,9 +305,10 @@ class QueueEngine
                 rescue(function () use ($it) {
                     broadcast(new QueueUpdated($it));
                 }, report: false);
+                NodeBroadcaster::broadcast('queue-updated', $it);
             }
 
-            $item->load(['patient', 'queueDay']);
+            $item->refresh()->load(['patient', 'queueDay']);
             $this->recalculateWaitTimes($item->queueDay);
 
             return $item;
@@ -214,24 +317,26 @@ class QueueEngine
 
     /**
      * Insert an emergency patient at the front of the Waiting queue.
+     * Existing patients' serial_no values are preserved.
      */
     public function insertEmergency(QueueDay $queueDay, Patient $patient): QueueItem
     {
         return DB::transaction(function () use ($queueDay, $patient) {
             $queueDay = QueueDay::lockForUpdate()->find($queueDay->id);
 
-            // Bump all waiting patients by 1
+            // Shift queue_order for waiting patients (serials remain unchanged)
             QueueItem::where('queue_day_id', $queueDay->id)
                 ->where('status', 'Waiting')
                 ->lockForUpdate()
-                ->increment('serial_no');
+                ->increment('queue_order');
 
-            $nextSerial = QueueItem::where('queue_day_id', $queueDay->id)->max('serial_no') + 1;
+            $nextSerial = (QueueItem::where('queue_day_id', $queueDay->id)->max('serial_no') ?? 0) + 1;
 
             $item = QueueItem::create([
                 'queue_day_id'     => $queueDay->id,
                 'patient_id'       => $patient->id,
                 'serial_no'        => $nextSerial,
+                'queue_order'      => 1,
                 'appointment_type' => 'Walk-in',
                 'status'           => 'Waiting',
                 'priority'         => 'Emergency',
@@ -275,9 +380,6 @@ class QueueEngine
     /**
      * Recalculate estimated wait times for all Waiting items in a queue day.
      * Formula: EWT = avg_consultation_time * position_in_queue + active_delay
-     *
-     * Performance: Uses a single batch UPDATE instead of one UPDATE per patient.
-     * For N waiting patients: was N+1 queries, now 2 queries (SELECT + 1 UPDATE).
      */
     public function recalculateWaitTimes(?QueueDay $queueDay): void
     {
@@ -295,8 +397,9 @@ class QueueEngine
         $waitingItems = QueueItem::where('queue_day_id', $queueDay->id)
             ->where('status', 'Waiting')
             ->orderBy('priority', 'desc')
-            ->orderBy('serial_no')
-            ->get(['id', 'serial_no', 'priority']);
+            ->orderBy('queue_order', 'asc')
+            ->orderBy('serial_no', 'asc')
+            ->get(['id', 'serial_no', 'queue_order', 'priority']);
 
         if ($waitingItems->isEmpty()) {
             return;

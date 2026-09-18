@@ -164,9 +164,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* ── Footer note ── */}
-      <p className="text-center text-xs text-slate-300 dark:text-slate-700 pb-4">
-        {getSetting('site_title', 'CQMP')} — Clinic Queue Management Platform
-      </p>
+      <div className="text-center text-xs text-slate-400 dark:text-slate-600 pb-4 space-y-1">
+        <p>{getSetting('site_title', 'CQMP')} — Clinic Queue Management Platform</p>
+        <p className="text-[11px]">
+          Engineered with excellence by{' '}
+          <a
+            href="https://devcenterpoint.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
+            DevCenterPoint
+          </a>
+        </p>
+      </div>
     </div>
   );
 };
