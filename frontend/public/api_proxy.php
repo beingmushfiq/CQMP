@@ -1,27 +1,67 @@
 <?php
 /**
- * CQMP - Production API Reverse Proxy
- * Eliminates cross-origin CORS preflight and firewall blocks by routing
- * API calls locally from serial.ferozamedicinecorner.com to backend.
+ * CQMP - Production API In-Process Router & Gateway
+ * 
+ * Routes /api/* directly to the backend Laravel installation on the same server.
+ * This completely avoids:
+ *  - Imunify360 Bot-Protection / WebShield blocks on server-side cURL loopback
+ *  - Cross-origin CORS preflight overhead
+ *  - Network latency between subdomains on the same host
  */
 
-// Disable execution time limit for long-polling / slow queries
+// Allow long-running operations if needed
 set_time_limit(60);
 
+// Candidate backend directories on cPanel / production
+$possibleBackendPaths = [
+    '/home/httpferozamedici/api.ferozamedicinecorner.com',
+    '/home/httpferozamedici/public_html/api.ferozamedicinecorner.com',
+    dirname(__DIR__) . '/api.ferozamedicinecorner.com',
+    dirname(dirname(__DIR__)) . '/api.ferozamedicinecorner.com',
+    dirname(__DIR__) . '/backend',
+    realpath(__DIR__ . '/../../backend'),
+    'C:/CQMP/backend',
+    'D:/CQMP/backend',
+];
+
+$backendPath = null;
+foreach ($possibleBackendPaths as $path) {
+    if (!empty($path) && file_exists($path . '/bootstrap/app.php') && file_exists($path . '/vendor/autoload.php')) {
+        $backendPath = realpath($path);
+        break;
+    }
+}
+
+if ($backendPath) {
+    $publicDir = is_dir($backendPath . '/public') ? $backendPath . '/public' : $backendPath;
+    chdir($publicDir);
+
+    if (!defined('LARAVEL_START')) {
+        define('LARAVEL_START', microtime(true));
+    }
+
+    if (file_exists($backendPath . '/storage/framework/maintenance.php')) {
+        require $backendPath . '/storage/framework/maintenance.php';
+    }
+
+    require_once $backendPath . '/vendor/autoload.php';
+
+    /** @var \Illuminate\Foundation\Application $app */
+    $app = require_once $backendPath . '/bootstrap/app.php';
+
+    $app->handleRequest(\Illuminate\Http\Request::capture());
+    exit;
+}
+
+// ── Fallback: If backend folder is not found on disk, attempt cURL proxy ──
 $targetHost = 'https://api.ferozamedicinecorner.com';
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
-
-// Target URL
 $targetUrl = $targetHost . $requestUri;
 
-// Initialize cURL
 $ch = curl_init($targetUrl);
-
-// Match the incoming HTTP Method
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
 
-// Forward request headers
 $forwardHeaders = [];
 if (function_exists('getallheaders')) {
     $incomingHeaders = getallheaders();
@@ -37,20 +77,17 @@ if (function_exists('getallheaders')) {
 
 foreach ($incomingHeaders as $name => $value) {
     $lower = strtolower($name);
-    // Skip headers that cURL or the destination webserver manages
     if (in_array($lower, ['host', 'content-length', 'expect'])) {
         continue;
     }
     $forwardHeaders[] = "{$name}: {$value}";
 }
 
-// Attach Client Information headers
 $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 $forwardHeaders[] = "X-Forwarded-For: {$clientIp}";
 $forwardHeaders[] = "X-Forwarded-Host: " . ($_SERVER['HTTP_HOST'] ?? 'serial.ferozamedicinecorner.com');
 $forwardHeaders[] = "X-Forwarded-Proto: " . ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http');
 
-// Forward payload for POST, PUT, PATCH, DELETE
 if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
     $body = file_get_contents('php://input');
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
@@ -71,7 +108,8 @@ if ($response === false) {
     header('Content-Type: application/json');
     echo json_encode([
         'message' => 'Backend Gateway Error',
-        'error' => curl_error($ch)
+        'error' => curl_error($ch),
+        'searched_paths' => $possibleBackendPaths
     ]);
     curl_close($ch);
     exit;
@@ -86,14 +124,12 @@ $body = substr($response, $headerSize);
 
 http_response_code($httpCode);
 
-// Forward response headers
 $headerLines = explode("\r\n", $rawHeaders);
 foreach ($headerLines as $line) {
     $line = trim($line);
     if (empty($line) || stripos($line, 'HTTP/') === 0) {
         continue;
     }
-    // Filter out transfer-encoding or content-encoding chunked to prevent gzip mismatches
     if (preg_match('/^(Transfer-Encoding|Content-Encoding):/i', $line)) {
         continue;
     }

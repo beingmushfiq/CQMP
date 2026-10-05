@@ -81,10 +81,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || isset($_GET['run'])) {
                 $logs[] = ["success", "Copied frontend assets to: {$frontendDir}"];
             }
 
-            // Ensure frontend .htaccess
-            $spaHtaccess = "<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n  RewriteRule ^index\.html$ - [L]\n  RewriteCond %{REQUEST_FILENAME} !-f\n  RewriteCond %{REQUEST_FILENAME} !-d\n  RewriteRule . /index.html [L]\n</IfModule>\n";
-            file_put_contents($frontendDir . '/.htaccess', $spaHtaccess);
-            $logs[] = ["success", "Verified frontend SPA .htaccess"];
+            // Ensure frontend .htaccess with API routing support
+            if (file_exists($extractDir . '/frontend_dist/.htaccess')) {
+                copy($extractDir . '/frontend_dist/.htaccess', $frontendDir . '/.htaccess');
+                $logs[] = ["success", "Copied frontend .htaccess with API gateway rules."];
+            } elseif (file_exists($extractDir . '/dist/.htaccess')) {
+                copy($extractDir . '/dist/.htaccess', $frontendDir . '/.htaccess');
+                $logs[] = ["success", "Copied frontend .htaccess with API gateway rules."];
+            } else {
+                $spaHtaccess = "<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteBase /\n  RewriteCond %{REQUEST_URI} ^/api/ [NC]\n  RewriteRule ^api/(.*)$ api_proxy.php [L,QSA]\n  RewriteRule ^index\.html$ - [L]\n  RewriteCond %{REQUEST_FILENAME} !-f\n  RewriteCond %{REQUEST_FILENAME} !-d\n  RewriteRule . /index.html [L]\n</IfModule>\n";
+                file_put_contents($frontendDir . '/.htaccess', $spaHtaccess);
+                $logs[] = ["success", "Created frontend SPA .htaccess with /api/ proxy rule."];
+            }
 
             // 2. Copy Backend Updates
             if (is_dir($extractDir . '/backend_update')) {

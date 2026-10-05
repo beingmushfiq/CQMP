@@ -81,7 +81,10 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory($tempDir, $zipOutput)
 
 # 4. Clean up staging
-Remove-Item -Recurse -Force $tempDir
+Start-Sleep -Milliseconds 500
+[System.GC]::Collect()
+[System.GC]::WaitForPendingFinalizers()
+Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
 
 $zipSize = (Get-Item $zipOutput).Length / 1MB
 $roundedSize = [math]::Round($zipSize, 2)
