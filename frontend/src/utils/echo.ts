@@ -61,10 +61,10 @@ if (broadcastDriver === 'pusher' || (hasPusherConfig && broadcastDriver !== 'rev
     import.meta.env.VITE_REVERB_PORT ?? (isSecure ? '443' : '8080'),
     10
   );
-  const defaultHost = window.location.hostname.includes('ferozamedicinecorner.com')
+  const isFeroza = typeof window !== 'undefined' && window.location.hostname.includes('ferozamedicinecorner.com');
+  const reverbHost = isFeroza
     ? 'api.ferozamedicinecorner.com'
-    : window.location.hostname || '127.0.0.1';
-  const reverbHost = import.meta.env.VITE_REVERB_HOST || defaultHost;
+    : (import.meta.env.VITE_REVERB_HOST || window.location.hostname || '127.0.0.1');
 
   echoInstance = new Echo({
     broadcaster: 'reverb',

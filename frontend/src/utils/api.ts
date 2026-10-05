@@ -19,17 +19,8 @@ import axios, { type AxiosError } from 'axios';
  * Avoids hardcoding any host — works for local dev, staging, and production.
  */
 export const getApiBaseUrl = (): string => {
-  const configured = import.meta.env.VITE_API_BASE_URL?.trim() ?? import.meta.env.VITE_API_URL?.trim();
-  if (configured) {
-    return configured.replace(/\/$/, '');
-  }
-
   if (typeof window !== 'undefined') {
     const { protocol, hostname } = window.location;
-
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:8000/api/v1';
-    }
 
     // serial.ferozamedicinecorner.com: use same-origin (/api/v1) via server proxy
     // This completely eliminates cross-origin CORS preflights and WAF splash screens
@@ -44,6 +35,17 @@ export const getApiBaseUrl = (): string => {
     if (hostname.startsWith('api.')) {
       return `${protocol}//${hostname}/api/v1`;
     }
+
+    // Local development fallback
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      const configured = import.meta.env.VITE_API_BASE_URL?.trim() ?? import.meta.env.VITE_API_URL?.trim();
+      return configured ? configured.replace(/\/$/, '') : 'http://localhost:8000/api/v1';
+    }
+  }
+
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim() ?? import.meta.env.VITE_API_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, '');
   }
 
   return '/api/v1';
