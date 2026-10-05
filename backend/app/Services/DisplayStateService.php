@@ -34,12 +34,35 @@ class DisplayStateService
     {
         $state = $this->getCurrentState();
 
+        $defaultTitles = [
+            DisplayMode::BREAK->value => [
+                'title_bn' => 'বিরতি চলছে',
+                'title_en' => 'Doctor is on Break',
+            ],
+            DisplayMode::REPORT->value => [
+                'title_bn' => 'রিপোর্ট দেখা হচ্ছে',
+                'title_en' => 'Doctor is Reviewing Reports',
+            ],
+            DisplayMode::FOLLOW_UP->value => [
+                'title_bn' => 'ফলো-আপ রোগী দেখা হচ্ছে',
+                'title_en' => 'Doctor is Attending Follow-Up Patients',
+                'message_bn' => 'অনুগ্রহ করে অপেক্ষা করুন',
+                'message_en' => 'Please wait for your turn...',
+            ],
+            DisplayMode::EMERGENCY->value => [
+                'title_bn' => 'জরুরী রোগী দেখা হচ্ছে',
+                'title_en' => 'Emergency Patient',
+            ],
+        ];
+
+        $defaults = $defaultTitles[$mode->value] ?? [];
+
         $state->update([
             'mode' => $mode->value,
-            'title_bn' => $payload['title_bn'] ?? null,
-            'title_en' => $payload['title_en'] ?? null,
-            'message_bn' => $payload['message_bn'] ?? null,
-            'message_en' => $payload['message_en'] ?? null,
+            'title_bn' => $payload['title_bn'] ?? $defaults['title_bn'] ?? null,
+            'title_en' => $payload['title_en'] ?? $defaults['title_en'] ?? null,
+            'message_bn' => $payload['message_bn'] ?? $defaults['message_bn'] ?? null,
+            'message_en' => $payload['message_en'] ?? $defaults['message_en'] ?? null,
             'resume_at' => isset($payload['resume_at']) ? Carbon::parse($payload['resume_at']) : null,
             'activated_by' => Auth::id(),
             'activated_at' => Carbon::now(),

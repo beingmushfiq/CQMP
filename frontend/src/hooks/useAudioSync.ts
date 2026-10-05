@@ -77,6 +77,16 @@ export function useAudioSync(doctorId?: number) {
             repeatCount: 1,
             timestamp: Date.now(),
           });
+        } else if (mode === 'FOLLOW_UP') {
+          audioEngine.announce({
+            id: `followup-${Date.now()}`,
+            type: 'custom',
+            priority: AnnouncementPriority.CUSTOM,
+            textBn: 'এখন ফলো-আপ রোগী দেখা হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন।',
+            textEn: 'The doctor is now attending follow-up patients. Please wait.',
+            repeatCount: 1,
+            timestamp: Date.now(),
+          });
         } else if (mode === 'NORMAL') {
           audioEngine.announce({
             id: `resume-${Date.now()}`,

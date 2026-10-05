@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coffee, FileText, ShieldAlert, WifiOff, Loader2 } from 'lucide-react';
+import { Coffee, FileText, ShieldAlert, WifiOff, Loader2, UserCheck } from 'lucide-react';
 import { useDisplayModeContext } from '../DisplayModeContext';
 import { useLanguageStore } from '../../store/useLanguageStore';
 
@@ -12,6 +12,7 @@ export const ModeOverlays: React.FC = React.memo(() => {
 
   const isBreak = mode === 'BREAK' || mode === 'LUNCH' || mode === 'PRAYER';
   const isReport = mode === 'REPORT';
+  const isFollowUp = mode === 'FOLLOW_UP';
   const isEmergency = mode === 'EMERGENCY';
   const isOffline = mode === 'OFFLINE' || mode === 'MAINTENANCE';
 
@@ -99,6 +100,47 @@ export const ModeOverlays: React.FC = React.memo(() => {
             <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-bold uppercase tracking-widest text-lg">
               <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
               <span>Please Wait</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* ── FOLLOW UP MODE ── */}
+      {isFollowUp && (
+        <motion.div
+          key="followup-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+          className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-2xl bg-slate-950/90 p-8"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-center space-y-8 max-w-3xl flex flex-col items-center"
+          >
+            <div className="w-40 h-40 rounded-full bg-teal-500/10 border-4 border-teal-500/40 flex items-center justify-center shadow-[0_0_60px_rgba(20,184,166,0.25)]">
+              <UserCheck className="w-20 h-20 text-teal-400" />
+            </div>
+
+            <div className="space-y-4">
+              <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-teal-400 tracking-tight leading-none">
+                {displayState.title_bn || 'ফলো-আপ রোগী দেখা হচ্ছে'}
+              </h1>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-200">
+                {displayState.title_en || 'Doctor is Attending Follow-Up Patients'}
+              </h2>
+              <p className="text-2xl text-slate-400 font-semibold pt-2">
+                {displayState.message_bn || displayState.message_en || 'অনুগ্রহ করে অপেক্ষা করুন'}
+              </p>
+            </div>
+
+            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 font-bold uppercase tracking-widest text-lg">
+              <Loader2 className="w-5 h-5 animate-spin text-teal-400" />
+              <span>Follow-Up in Progress</span>
             </div>
           </motion.div>
         </motion.div>

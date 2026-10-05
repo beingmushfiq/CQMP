@@ -7,6 +7,7 @@ enum DisplayMode: string
     case NORMAL = 'NORMAL';
     case BREAK = 'BREAK';
     case REPORT = 'REPORT';
+    case FOLLOW_UP = 'FOLLOW_UP';
     case EMERGENCY = 'EMERGENCY';
     
     // Future-ready display states

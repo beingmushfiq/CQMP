@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '../utils/api';
 import { echo } from '../utils/echo';
 
-export type DisplayMode = 'NORMAL' | 'BREAK' | 'REPORT' | 'EMERGENCY' | 'LUNCH' | 'PRAYER' | 'OFFLINE' | 'MAINTENANCE' | 'CUSTOM';
+export type DisplayMode = 'NORMAL' | 'BREAK' | 'REPORT' | 'FOLLOW_UP' | 'EMERGENCY' | 'LUNCH' | 'PRAYER' | 'OFFLINE' | 'MAINTENANCE' | 'CUSTOM';
 
 export interface DisplayState {
   mode: DisplayMode;

@@ -301,9 +301,20 @@ export const DoctorDashboard: React.FC = () => {
                     <FileText className="w-3.5 h-3.5" /> Report
                   </button>
                   <button
+                    onClick={async () => { setDisplayLoading(true); try { await setDisplayMode('FOLLOW_UP'); } finally { setDisplayLoading(false); } }}
+                    disabled={displayLoading || displayMode === 'FOLLOW_UP'}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg font-semibold text-xs cursor-pointer transition-all active:scale-[0.97] min-h-[44px] border ${
+                      displayMode === 'FOLLOW_UP'
+                        ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30 font-bold'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950/20 text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 border-slate-200 dark:border-slate-700 hover:border-teal-500/40'
+                    }`}
+                  >
+                    <UserCheck className="w-3.5 h-3.5" /> Follow Up
+                  </button>
+                  <button
                     onClick={async () => { setDisplayLoading(true); try { await setDisplayMode('EMERGENCY'); } finally { setDisplayLoading(false); } }}
                     disabled={displayLoading || displayMode === 'EMERGENCY'}
-                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg font-semibold text-xs cursor-pointer transition-all active:scale-[0.97] min-h-[44px] border ${
+                    className={`col-span-2 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg font-semibold text-xs cursor-pointer transition-all active:scale-[0.97] min-h-[44px] border ${
                       displayMode === 'EMERGENCY'
                         ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
                         : 'bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 border-slate-200 dark:border-slate-700 hover:border-rose-500/40'
