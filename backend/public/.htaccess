@@ -16,9 +16,12 @@
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
     # ── Force HTTPS ───────────────────────────────────────────────────
-    # Redirect all HTTP traffic to HTTPS.
-    # Only active when SSL is enabled (avoids redirect loops in dev).
+    # Redirect HTTP to HTTPS, but NEVER redirect OPTIONS (preflight) requests
+    # and recognize X-Forwarded-Proto from OpenResty / reverse proxy.
+    RewriteCond %{REQUEST_METHOD} !OPTIONS
     RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{HTTP:X-Forwarded-SSL} !on
     RewriteCond %{HTTP_HOST} ^api\.ferozamedicinecorner\.com$ [NC]
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 

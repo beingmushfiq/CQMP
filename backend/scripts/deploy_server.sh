@@ -48,30 +48,19 @@ PHP="$(which php 2>/dev/null || echo '/usr/local/bin/php')"
 echo ""
 echo ">>> [1/5] Deploying Frontend (compiled dist/ assets)..."
 if [ -d "$SCRIPT_DIR/frontend_dist" ]; then
-    # Sync new compiled build into frontend directory
-    cp -rf "$SCRIPT_DIR/frontend_dist/"* "$FRONTEND_DIR/"
-    echo "✓ Frontend assets successfully copied to $FRONTEND_DIR"
+    # Sync new compiled build into frontend directory (including dotfiles like .htaccess)
+    cp -rf "$SCRIPT_DIR/frontend_dist/." "$FRONTEND_DIR/"
+    echo "✓ Frontend assets, .htaccess, and api_proxy.php copied to $FRONTEND_DIR"
 elif [ -d "$SCRIPT_DIR/dist" ]; then
-    cp -rf "$SCRIPT_DIR/dist/"* "$FRONTEND_DIR/"
-    echo "✓ Frontend assets successfully copied to $FRONTEND_DIR"
+    cp -rf "$SCRIPT_DIR/dist/." "$FRONTEND_DIR/"
+    echo "✓ Frontend assets, .htaccess, and api_proxy.php copied to $FRONTEND_DIR"
 else
     echo "Notice: No frontend_dist folder in current directory. Skipping frontend copy."
 fi
 
-# Ensure frontend .htaccess exists for SPA routing
-if [ ! -f "$FRONTEND_DIR/.htaccess" ]; then
-    echo "Creating SPA .htaccess in frontend directory..."
-    cat << 'EOF' > "$FRONTEND_DIR/.htaccess"
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /index.html [L]
-</IfModule>
-EOF
-    echo "✓ .htaccess created for frontend SPA."
+# Ensure frontend .htaccess has the API proxy rule
+if [ -f "$SCRIPT_DIR/frontend_dist/.htaccess" ]; then
+    cp -f "$SCRIPT_DIR/frontend_dist/.htaccess" "$FRONTEND_DIR/.htaccess"
 fi
 
 # ── 2. Deploy Backend Updated Files ───────────────────────────

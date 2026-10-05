@@ -10,6 +10,15 @@
     RewriteCond %{HTTPS} off
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+    # ── Handle Authorization Header ────────────────────────────────
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # ── Route /api/* requests to Reverse Proxy ─────────────────────
+    # Handles API requests same-origin, completely eliminating CORS
+    RewriteCond %{REQUEST_URI} ^/api/ [NC]
+    RewriteRule ^api/(.*)$ api_proxy.php [L,QSA]
+
     # ── Handle SPA Routing ─────────────────────────────────────────
     # If the requested file or directory exists, serve it directly
     RewriteCond %{REQUEST_FILENAME} !-f

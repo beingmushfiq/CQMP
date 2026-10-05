@@ -31,9 +31,10 @@ export const getApiBaseUrl = (): string => {
       return 'http://localhost:8000/api/v1';
     }
 
-    // serial.ferozamedicinecorner.com → api.ferozamedicinecorner.com
+    // serial.ferozamedicinecorner.com: use same-origin (/api/v1) via server proxy
+    // This completely eliminates cross-origin CORS preflights and WAF splash screens
     if (hostname.startsWith('serial.')) {
-      return `${protocol}//api.${hostname.replace(/^serial\./, '')}/api/v1`;
+      return `${protocol}//${hostname}/api/v1`;
     }
 
     if (hostname.startsWith('www.')) {
@@ -53,6 +54,9 @@ export const getApiBaseUrl = (): string => {
  * Used for building public file/avatar URLs.
  */
 export const getStorageBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname.includes('ferozamedicinecorner.com')) {
+    return 'https://api.ferozamedicinecorner.com';
+  }
   const apiBase = getApiBaseUrl();
   if (apiBase === '/api/v1') return '';
   return apiBase.replace(/\/api\/v1$/, '');
